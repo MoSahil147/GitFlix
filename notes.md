@@ -151,3 +151,7 @@ pythonfiles_changed=len(list(commit.files)) if commit.files else 0,
 list() converts the PaginatedList into a regular Python list that len() can work on.
 
 GitHub API returns data in pages (default 30 items per page) because sending thousands of records in one response would be massive, slow, and could crash the client. Pagination lets you fetch data in manageable chunks. PyGithub wraps this in a PaginatedList object that fetches next pages automatically as you iterate. Same concept as infinite scroll on Instagram — it doesn't load all 10,000 posts at once. Loads 20, you scroll, loads 20 more.
+
+lambda is an anonymous function — a function with no name. lambda: {...} means "a function that takes no arguments and returns this dictionary every time it's called."
+
+It's used here because defaultdict needs a function to call when creating new keys — not a value directly.
