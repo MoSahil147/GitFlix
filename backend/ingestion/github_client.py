@@ -1,3 +1,5 @@
+from click import File
+from langsmith import expect
 from langchain_core.load import load
 from github import Github
 
@@ -93,4 +95,80 @@ def fetch_repo_data(repo_url: str, max_commits: int=500) -> RepoData:
             m["last"] = c.timestamp
     print(f"Found {len(contrib_map)} contributors")
     
+    # Step 4 Convert the raw data into proper Pydantic Contributor Stats objects
+    print("Building the Contributor profiles....")
+    
+    # List is cleaner than for loop and same results
+    contributors = [
+        ContributorStats(
+            login=login, # will get the username 
+            email=None, # cants get from commit data
+            total_commits=data["commits"],
+            first_commit=data["first"],
+            last_commit=data["last"],
+            languages_touched=[], # filled later in analytics
+            total_lines_changed=data["lines"],
+            active_months=len(data["months"])
+        )
+        for login, data in contrib_map.items() # iterate over all authors
+        if data["commits"] > 0
+    ]
+    
+    # sort descending by the commits, our hero contributor is always at index[0]
+    contributors.sort(key=lambda x: x.total_commits, reverse=True)
+    print(f"Top contributor: {contributors[0].login} with {contributors[0].total_commits} commits")
+    
+    # step 5 now wll build file histories to find ghost files
+    print("Fetching file histories.....")
+    file_map=defaultdict(lambda: {
+        "modified":0,
+        "authors":set(),
+        "dates":[]
+    })
+    
+    # only look at the last 200 commits for file data: Quality over Quantity
+    for commit in repo.get_commits()[:200]:
+        try:
+            for f in commit.files:
+                file_map[f.filename]["modified"] += 1
+                if commit.author:
+                    file_map[f.filename]["authors"].add(commit.author.login)
+                file_map[f.filename]["dates"].append(commit.commit.author.date)
+        except Exception:
+            continue
+    print(f"Found {len(file_map)} unique files")
+    
+    # step6
+    # Now will package everything into RepoData and return it
+    # buildin filehistory objects and detect ghost files
+    cutoff = datetime.now(timezone.utc) - timedelta(days=180)
+    file_histories=[]
+    
+    for path, data in list(file_map.items())[:200]:
+        dates = sorted(data["dates"])
+        last_mod=dates[-1] if dates else datetime.now(timezone.utc)
+        file_histories.append(FileHistory(
+            path=path, # file path
+            created=dates[0] if dates else datetime.now(timezone.utc), # first time the file appeared
+            last_modified=last_mod,
+            total_modifications=data["modified"],
+            authors=list(data["authors"]),
+            # ghost files which arent touched in 180+ days
+            is_ghost=(last_mod < cutoff and data["modified"] > 3)
+        ))
+        
+    # step 7 Package time, package everything into one repoData object and return
+    print("Package everything into RepoData...")
+    return RepoData(
+        repo_name=repo.full_name, # repo names
+        repo_url=repo_url, # url
+        description=repo.description, # des
+        created_at=repo.created_at, # date of creation, Happy Birthday
+        primary_language=repo.language, # main lnagauge Spanish, german, .... Kidding Python, Java... mahiya se Java Java
+        total_commits=len(commits_raw), # commits fetched
+        commits=commits_raw, # list of CommitData Objects
+        contributors=contributors[:20], # top 20 contributors only
+        file_histories=file_histories, # list of FileHistory objects
+    )
+                
     

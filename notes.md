@@ -155,3 +155,24 @@ GitHub API returns data in pages (default 30 items per page) because sending tho
 lambda is an anonymous function — a function with no name. lambda: {...} means "a function that takes no arguments and returns this dictionary every time it's called."
 
 It's used here because defaultdict needs a function to call when creating new keys — not a value directly.
+
+Step 4
+List comprehension is a shorter, cleaner way to write a for loop that builds a list. Same result, less code, more readable.
+# Regular for loop - 4 lines
+contributors = []
+for login, data in contrib_map.items():
+    if data["commits"] > 0:
+        contributors.append(ContributorStats(...))
+
+# List comprehension - 1 line
+contributors = [ContributorStats(...) for login, data in contrib_map.items() if data["commits"] > 0]
+
+contributors.sort(key=lambda x: x.total_commits, reverse=True)
+
+key=lambda x: x.total_commits → "sort by comparing each contributor's total_commits value"
+reverse=True → "sort in descending order — highest first"
+So contributors[0] → the person with the most commits — our hero
+
+step 5
+Q1: File history per commit is expensive — each commit requires an extra API call to get file data. 200 commits × API calls is already heavy. 500 would be too slow and risk hitting rate limits. Quality over quantity — 200 gives us enough to identify ghost files.
+Q2: set() because one author can modify the same file 50 times. We only want to know who touched it, not how many times. Sets automatically remove duplicates — {"sahil", "parina"} not {"sahil", "sahil", "sahil", "parina"}.
