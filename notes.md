@@ -176,3 +176,36 @@ So contributors[0] → the person with the most commits — our hero
 step 5
 Q1: File history per commit is expensive — each commit requires an extra API call to get file data. 200 commits × API calls is already heavy. 500 would be too slow and risk hitting rate limits. Quality over quantity — 200 gives us enough to identify ghost files.
 Q2: set() because one author can modify the same file 50 times. We only want to know who touched it, not how many times. Sets automatically remove duplicates — {"sahil", "parina"} not {"sahil", "sahil", "sahil", "parina"}.
+
+.resample("W") works only when the DataFrame index is a DatetimeIndex. That's it. Pandas needs to know when each row sits in time so it can group rows into weekly buckets. By doing set_index("timestamp"), you're telling pandas "use the datetime column as the axis of time." Without that, pandas has no idea what "weekly" means.
+Think of it like a ruler — resample needs a time ruler as the index, not just a regular numbered index (0, 1, 2...).
+Concrete check: If you forget set_index and call .resample() on a regular integer index, pandas throws: TypeError: Only valid with DatetimeIndex.
+
+Standard deviation is part of the answer. The full answer is:
+This is called Z-score thresholding (specifically a 2-sigma rule). It assumes the data follows a normal distribution (bell curve). The assumption is that most weeks are "average" and spikes are rare outliers.
+Does that hold for real repos? No, almost certainly not. Real commit histories are right-skewed — lots of quiet weeks, occasional bursts. A normal distribution assumption understates how extreme spikes actually are. A better fit would be a Poisson or negative binomial distribution. But 2-sigma is good enough for a cinematic tool like GitFlix.
+
+The variable era_start is initialized to commits_df.index.min() — the very first commit. The loop only updates era_start when it finds a zero-week gap greater than 28 days. But it never updates era_start when the gap is ≤28 days.
+So if you have zero-weeks at weeks 2, 3, and 4 of the repo, the check (row["week"] - era_start).days > 28 will eventually trigger on week 4 and create an era from the very beginning — eating a near-empty era as if it were an active period. The era boundaries get distorted for repos that had a slow, patchy start.
+Also: the final eras.append() after the loop always adds one last era regardless — so a repo with no zero-weeks at all still gets labeled as having two eras.
+
+The list of contributors is already sorted by commits, highest first. So contributors[0] is always the top person.
+The bug is: the code checks every contributor against the same max number. If two people tied, both get called "hero." The film then has two heroes which breaks the story.
+Easy fix — just give hero to whoever is first in the list. Done.
+
+A dict is just easier to write here. The analytics output gets immediately converted to a JSON string and passed to the agent. Nobody is checking its structure. So there's no point writing a full Pydantic class for it — that's extra work for zero benefit at this stage.
+
+part2 in alayzer 
+Take all commits and group them into weekly buckets
+Count how many commits happened each week
+Calculate what "normal" looks like (average + spread)
+Any week way above normal = spike (marked True)
+Save this as commit_series — this becomes the animated bar chart in Scene S03
+
+weekly = commits_df["sha"].resample("W").count().reset_index()
+Read it left to right:
+
+commits_df["sha"] — pick the sha column (we just need any column to count, sha works fine)
+.resample("W") — group the rows into weekly buckets ("W" = week)
+.count() — count how many commits fell in each bucket
+.reset_index() — after resample, the week dates are stuck as the index. This moves them back into a normal column so we can work with them
