@@ -15,7 +15,7 @@ const FPS = 30;
 export const SCENE_DURATIONS = {
   S01: 12,  // origin
   S02: 15,  // cast
-  S03: 22,  // commit share pie chart
+  S03: 14,  // commit share pie chart
   S04: 13,  // twist
   S05: 13,  // ghosts
   S06: 16,  // hero
