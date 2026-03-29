@@ -37,7 +37,7 @@ const getAudio = (script: ScriptJSON, id: string) =>
 export const GitflixVideo: React.FC<{ script: ScriptJSON }> = ({ script }) => (
   <>
     {/* background music plays across the entire film at low volume */}
-    <Html5Audio src={MUSIC[script.tone] ?? MUSIC.documentary} volume={0.18} loop />
+    <Html5Audio src={MUSIC[script.tone] ?? MUSIC.documentary} volume={0.18} />
 
     <Series>
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S01 * FPS}>
