@@ -1,6 +1,6 @@
 import React from "react";
 import { Series } from "remotion";
-import { ScriptJSON } from "./types";
+import type { ScriptJSON } from "./types";
 import { S01Origin } from "./scenes/S01Origin";
 import { S02Cast } from "./scenes/S02Cast";
 import { S03Rise } from "./scenes/S03Rise";

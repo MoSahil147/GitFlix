@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
-import { Character } from "../types";
+import type { Character } from "../types";
 
 // maps role to a human readable label for the card
 const ROLE_LABELS = {

@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
-import { HeroCommit } from "../types";
+import type { HeroCommit } from "../types";
 
 // fake diff lines to animate in — gives the feel of a real code change
 const DIFF_LINES = [

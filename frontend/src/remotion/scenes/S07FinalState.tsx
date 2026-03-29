@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, useVideoConfig } from "remotion";
-import { ScriptJSON } from "../types";
+import type { ScriptJSON } from "../types";
 
 export const S07FinalState: React.FC<{
   script: ScriptJSON;

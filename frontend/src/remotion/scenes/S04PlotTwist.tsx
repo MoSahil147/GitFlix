@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
-import { CommitPoint } from "../types";
+import type { CommitPoint } from "../types";
 
 export const S04PlotTwist: React.FC<{
   commitSeries: CommitPoint[];

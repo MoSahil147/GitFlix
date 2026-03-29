@@ -1,6 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate, useVideoConfig } from "remotion";
-import { CommitPoint } from "../types";
+import type { CommitPoint } from "../types";
 
 export const S03Rise: React.FC<{
   commitSeries: CommitPoint[];
