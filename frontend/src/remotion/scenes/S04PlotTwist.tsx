@@ -5,7 +5,7 @@ import type { CommitPoint } from "../types";
 export const S04PlotTwist: React.FC<{
   commitSeries: CommitPoint[];
   narration: string;
-}> = ({ commitSeries, narration }) => {
+}> = ({ narration }) => {
   const frame = useCurrentFrame();
 
   // white flash at the very start — dramatic effect

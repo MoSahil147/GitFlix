@@ -1,6 +1,6 @@
 import { Composition } from "remotion";
 import { GitflixVideo } from "./GitflixVideo";
-import { ScriptJSON } from "./types";
+import type { ScriptJSON } from "./types";
 
 // sample data used for testing in Remotion Studio
 // this gets replaced by real API data in the actual app

@@ -1,4 +1,5 @@
-import { useCurrentFrame, interpolate, useVideoConfig } from "remotion";
+import React from "react";
+import { useCurrentFrame, interpolate } from "remotion";
 
 const BG = "#0a0a0f";
 const ACCENT = "#5DCAA5";
