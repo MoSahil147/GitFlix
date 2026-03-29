@@ -290,3 +290,16 @@ commits_df["sha"] — pick the sha column (we just need any column to count, sha
 ### How to run the backend
 cd backend
 uv run uvicorn main:app --reload --port 8000
+
+## Remotion scaffold
+
+- types.ts = TypeScript interfaces, shape of all data
+- Root.tsx = registers the composition with Remotion, has sample data for testing
+- GitflixVideo.tsx = sequences all 7 scenes using Series
+
+### Key concepts
+- Series = plays scenes one after another in order
+- Series.Sequence = one scene with a fixed duration in frames
+- durationInFrames = seconds x fps (we use 30fps)
+- Total film = 85 seconds = 2550 frames
+- getNarration() helper finds the narration text for each scene by id

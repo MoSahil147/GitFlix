@@ -1,3 +1,4 @@
 .env
 *.pyc
 __pychache__/
+.DS_Store
