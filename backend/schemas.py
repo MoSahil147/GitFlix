@@ -103,3 +103,4 @@ class ScriptJSON(BaseModel):
     hero_commit: HeroCommit
     commit_series: List[Dict[str, Any]]
     scenes: List[Scene]
+    music_url: Optional[str] = None  # base64 data URI for background music (ElevenLabs)

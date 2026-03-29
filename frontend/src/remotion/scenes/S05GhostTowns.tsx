@@ -1,5 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
+import { Subtitle } from "../Subtitle";
 
 export const S05GhostTowns: React.FC<{
   ghostFiles: string[];
@@ -9,10 +10,9 @@ export const S05GhostTowns: React.FC<{
 
   const files = ghostFiles.slice(0, 7);
 
-  const headerOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
-  const titleOpacity  = interpolate(frame, [10, 28], [0, 1], { extrapolateRight: "clamp" });
-  const titleY        = interpolate(frame, [10, 28], [20, 0], { extrapolateRight: "clamp" });
-  const narOpacity    = interpolate(frame, [100, 120], [0, 1], { extrapolateRight: "clamp" });
+  const headerOpacity = interpolate(frame, [0, 15],  [0, 1], { extrapolateRight: "clamp" });
+  const titleOpacity  = interpolate(frame, [12, 30], [0, 1], { extrapolateRight: "clamp" });
+  const titleY        = interpolate(frame, [12, 30], [20, 0], { extrapolateRight: "clamp" });
 
   return (
     <div style={{
@@ -21,13 +21,12 @@ export const S05GhostTowns: React.FC<{
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif",
+      position: "relative",
     }}>
-      {/* label */}
       <div style={{ opacity: headerOpacity, fontSize: 13, color: "#5566aa", letterSpacing: 6, textTransform: "uppercase", marginBottom: 20 }}>
         Ghost Files
       </div>
 
-      {/* title */}
       <div style={{
         opacity: titleOpacity, transform: `translateY(${titleY}px)`,
         fontSize: 52, fontWeight: 800, color: "#fff",
@@ -42,42 +41,39 @@ export const S05GhostTowns: React.FC<{
         background: "#080810",
         border: "1px solid #1a1a30",
         borderRadius: 12,
-        padding: "24px 32px",
+        padding: "22px 32px",
         width: 820,
         marginBottom: 32,
       }}>
-        {/* terminal header */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-          {["#e05a5a", "#EF9F27", "#5DCAA5"].map(c => (
+        {/* traffic light dots */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          {["#e05a5a", "#EF9F27", "#5DCAA5"].map((c) => (
             <div key={c} style={{ width: 12, height: 12, borderRadius: "50%", background: c, opacity: 0.6 }} />
           ))}
         </div>
 
-        {/* file list */}
         {files.map((file, i) => {
-          const start = 30 + i * 10;
-          const op = interpolate(frame, [start, start + 12], [0, 1], { extrapolateRight: "clamp" });
-          // ghost effect: pulse opacity
-          const pulse = 0.5 + 0.5 * Math.sin((frame - start) * 0.12);
-          const finalOp = frame < start ? 0 : op < 1 ? op : 0.4 + 0.6 * pulse;
+          const start   = 32 + i * 10;
+          const entered = interpolate(frame, [start, start + 12], [0, 1], { extrapolateRight: "clamp" });
+          // ghost pulse after fully visible
+          const pulse   = 0.45 + 0.55 * Math.abs(Math.sin((frame - start) * 0.08));
+          const opacity = frame < start ? 0 : entered < 1 ? entered : pulse;
 
           return (
             <div key={file} style={{
-              opacity: finalOp,
+              opacity,
               fontFamily: "monospace", fontSize: 15,
               color: "#5566aa", marginBottom: 10,
-              display: "flex", alignItems: "center", gap: 12,
+              display: "flex", alignItems: "center", gap: 10,
             }}>
-              <span style={{ color: "#2a2a44", fontSize: 12 }}>~</span>
+              <span style={{ color: "#22224a", fontSize: 13 }}>~</span>
               {file}
             </div>
           );
         })}
       </div>
 
-      <div style={{ opacity: narOpacity, fontSize: 16, color: "#33334a", maxWidth: 800, textAlign: "center", fontStyle: "italic" }}>
-        {narration}
-      </div>
+      <Subtitle text={narration} startFrame={140} />
     </div>
   );
 };

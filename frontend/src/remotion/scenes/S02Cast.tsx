@@ -1,6 +1,7 @@
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import type { Character } from "../types";
+import { Subtitle } from "../Subtitle";
 
 const ROLE_LABELS = {
   hero: "The Hero",
@@ -24,16 +25,21 @@ export const S02Cast: React.FC<{
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif", gap: 36,
+      position: "relative",
     }}>
-      <div style={{ opacity: headerOpacity, fontSize: 15, color: "#8B5CF6", letterSpacing: 5, textTransform: "uppercase" }}>
+      <div style={{
+        opacity: headerOpacity,
+        fontSize: 13, color: "#8B5CF6",
+        letterSpacing: 5, textTransform: "uppercase",
+      }}>
         The Cast
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "center", maxWidth: 1400 }}>
         {characters.slice(0, 6).map((char, i) => {
-          const delay = i * 6;
-          const opacity = interpolate(frame, [delay + 10, delay + 22], [0, 1], { extrapolateRight: "clamp" });
-          const y       = interpolate(frame, [delay + 10, delay + 22], [24, 0], { extrapolateRight: "clamp" });
+          const delay = i * 8;
+          const opacity = interpolate(frame, [delay + 12, delay + 28], [0, 1], { extrapolateRight: "clamp" });
+          const y       = interpolate(frame, [delay + 12, delay + 28], [24, 0], { extrapolateRight: "clamp" });
 
           return (
             <div key={char.login} style={{
@@ -52,22 +58,21 @@ export const S02Cast: React.FC<{
               }}>
                 {char.login.slice(0, 2).toUpperCase()}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 6 }}>{char.login}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 6 }}>
+                {char.login}
+              </div>
               <div style={{ fontSize: 11, color: char.color, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>
                 {ROLE_LABELS[char.role]}
               </div>
-              <div style={{ fontSize: 12, color: "#33334a", lineHeight: 1.6 }}>{char.arc_summary}</div>
+              <div style={{ fontSize: 12, color: "#2a2a40", lineHeight: 1.6 }}>
+                {char.arc_summary}
+              </div>
             </div>
           );
         })}
       </div>
 
-      <div style={{
-        opacity: interpolate(frame, [90, 110], [0, 1], { extrapolateRight: "clamp" }),
-        fontSize: 16, color: "#33334a", maxWidth: 800, textAlign: "center", fontStyle: "italic",
-      }}>
-        {narration}
-      </div>
+      <Subtitle text={narration} startFrame={160} />
     </div>
   );
 };

@@ -48,4 +48,5 @@ export interface ScriptJSON {
   ghost_files: string[];
   scenes: Scene[];
   primary_language?: string;
+  music_url?: string; // base64 data URI for background music
 }
