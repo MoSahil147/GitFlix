@@ -257,3 +257,36 @@ commits_df["sha"] — pick the sha column (we just need any column to count, sha
 - json.loads() converts the string back to a dict inside each tool
 - json.dumps() converts the result back to a string to return
 - Agent uses these tools to gather story data before writing narration
+
+### director.py 
+- build_script() is the main function
+- ChatGroq connects to Groq API using GROQ_API_KEY from .env
+- temperature=0.7 means slightly creative but not random
+- All 5 tools are called here to pull story data
+- narrate() is defined inside build_script so it can access llm and SYSTEM_PROMPT
+- try/except in narrate() means LLM failure never crashes the whole film
+
+- context_map gives each scene the right data for narration
+- scenes loop calls narrate() for every scene using context_map
+- visual_params passes extra data to S03 (chart) and S06 (hero commit)
+- Character(**c) unpacks the dict into a Pydantic model
+- plot_twist is None if no spikes were found in the repo
+- ScriptJSON is the final return — this goes straight to the API
+
+## main.py
+
+- FastAPI app with 3 endpoints
+- CORS middleware lets frontend talk to backend across different ports
+- POST /generate: full pipeline in one go, returns ScriptJSON
+- GET /generate/stream: same pipeline but streams progress using SSE
+- GET /health: just returns ok, used to check if backend is alive
+
+### SSE explained
+- SSE = Server Sent Events
+- Server pushes data to the browser without browser asking
+- Each update is a JSON string starting with "data: " and ending with two newlines
+- Frontend listens using EventSource and updates the progress bar in real time
+
+### How to run the backend
+cd backend
+uv run uvicorn main:app --reload --port 8000
