@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Literal, Dict
 from datetime import datetime
 
 # CommitData represents a single commit in the repository
@@ -43,5 +43,62 @@ class RepoData(BaseModel):
     commits: List[CommitData]              # list of CommitData objects - nested validation
     contributors: List[ContributorStats]   # list of ContributorStats objects - nested validation
     file_histories: List[FileHistory]      # list of FileHistory objects - nested validation
-    
-    
+
+
+# Character = one contributor's role in the film
+class Character(BaseModel):
+    login: str
+    color: str                                                    # hex color assigned to them
+    role: Literal["hero", "ghost", "late_joiner", "consistent"]  # only these 4 values allowed
+    commit_count: int
+    active_months: int
+    arc_summary: str                                              # one sentence about them
+
+# Era = one active period in the repo's life
+class Era(BaseModel):
+    start: str        # date as string e.g. "2023-01-01"
+    end: str
+    label: str        # e.g. "Active period" or "Latest era"
+
+# PlotTwist = the most dramatic week in the repo
+class PlotTwist(BaseModel):
+    week: str
+    commit_count: int
+    twist_type: str         # e.g. "commit_spike"
+    narration_text: str     # written by the LLM later
+
+# HeroCommit = the single biggest commit in the repo
+class HeroCommit(BaseModel):
+    sha: str
+    author_login: str
+    message: str
+    lines_changed: int
+    timestamp: str
+    narration_text: str          # written by the LLM later
+    diff_excerpt: Optional[str] = None  # optional code snippet
+
+# Scene = one scene in the documentary film
+class Scene(BaseModel):
+    scene_id: str        # S01 through S07
+    title: str
+    duration_secs: int
+    narration_text: str
+    visual_params: Dict[str, Any] = {}   # extra data each scene needs
+
+# ScriptJSON = the master object the agent returns
+# contains everything needed to render the full film
+class ScriptJSON(BaseModel):
+    repo_name: str
+    description: Optional[str]
+    tone: Literal["epic", "documentary", "casual"]
+    primary_language: Optional[str]
+    total_commits: int
+    repo_age_days: int
+    contributor_count: int
+    characters: List[Character]
+    eras: List[Era]
+    plot_twist: Optional[PlotTwist]
+    ghost_files: List[str]
+    hero_commit: HeroCommit
+    commit_series: List[Dict[str, Any]]
+    scenes: List[Scene]

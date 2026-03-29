@@ -235,3 +235,16 @@ commits_df["sha"] — pick the sha column (we just need any column to count, sha
 - commit_series is cleaned — is_spike column removed, only week + count kept
 - ghost_files filtered from file_histories where is_ghost is True
 - This dict is the input to the LangChain agent in director.py
+
+## schemas.py — ScriptJSON models
+
+- Character — one contributor with role, color, arc summary
+- Era — one active period with start and end dates
+- PlotTwist — the biggest spike week, narration written by LLM
+- HeroCommit — the biggest single commit, narration written by LLM
+- Scene — one of 7 film scenes, has scene_id, duration, narration, visual data
+- ScriptJSON — the master object, holds everything, returned by the agent
+
+### Literal type
+- Literal["hero", "ghost"] means only those exact values are allowed
+- Pydantic will throw an error if anything else is passed in
