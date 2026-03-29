@@ -82,6 +82,7 @@ export const GitflixVideo: React.FC<{ script: ScriptJSON }> = ({ script }) => (
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S04 * FPS}>
         <Fade>
           <S04PlotTwist
+            plotTwist={script.plot_twist}
             commitSeries={script.commit_series}
             narration={getNarration(script, "S04")}
           />

@@ -34,6 +34,14 @@ export interface Scene {
   audio_url?: string; // base64 data URI from ElevenLabs TTS
 }
 
+// the dramatic turning point — the week with the biggest commit spike
+export interface PlotTwist {
+  week: string;
+  commit_count: number;
+  twist_type: string;
+  narration_text: string;
+}
+
 // the master object — holds everything needed to render the film
 export interface ScriptJSON {
   repo_name: string;
@@ -44,6 +52,7 @@ export interface ScriptJSON {
   contributor_count: number;
   characters: Character[];
   commit_series: CommitPoint[];
+  plot_twist?: PlotTwist;
   hero_commit: HeroCommit;
   ghost_files: string[];
   scenes: Scene[];
