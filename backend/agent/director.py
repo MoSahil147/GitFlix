@@ -55,7 +55,7 @@ Tone guide:
     # narrate() sends context to the LLM and gets back 2-3 sentences
     # if LLM fails, it returns the fallback from SCENE_TEMPLATES
     def narrate(scene_id: str, context: str, fallback: str) -> str:
-        prompt = f"{SYSTEM_PROMPT}\n\nWrite narration for scene {scene_id}.\nContext: {context}\n\nRules:\n- Return ONLY the subtitle text, nothing else\n- No stage directions, no voice notes, no parentheses, no asterisks\n- No phrases like 'In a deep voice' or 'Narrator:'\n- Just plain sentences the viewer will read on screen\n- Do NOT mention scene numbers, scene names, or any labels\n- 2-3 sentences max"
+        prompt = f"{SYSTEM_PROMPT}\n\nWrite narration for scene {scene_id}.\nContext: {context}\n\nRules:\n- Return ONLY plain subtitle text — nothing else\n- NO parentheses, brackets, asterisks, or stage directions\n- NO voice directions like 'deep voice', 'music plays', 'in the background'\n- NO scene numbers, scene names, or labels like 'Narrator:'\n- NO meta-commentary about the film, music, or visuals\n- Just 2-3 plain sentences describing the story"
         try:
             return llm.invoke(prompt).content.strip()
         except Exception:
