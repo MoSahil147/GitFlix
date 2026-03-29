@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Literal, Dict
+from typing import List, Optional, Literal, Dict, Any
 from datetime import datetime
 
 # CommitData represents a single commit in the repository

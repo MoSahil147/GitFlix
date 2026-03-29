@@ -12,7 +12,7 @@ app=FastAPI(title="GitFlix API")
 
 # CORS middleware, allows the frontend (running on a different port) to talk to the backend
 # without this the browser will block all requests from the frontend
-app.middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], # allowing any origin for now
     allow_methods=["*"],
