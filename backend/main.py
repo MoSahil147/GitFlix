@@ -8,7 +8,7 @@ from analytics.analyzer import run_analytics
 from agent.director import build_script
 
 
-# ── ElevenLabs helpers ────────────────────────────────────────────────────────
+# ElevenLabs helpers
 
 def _get_eleven_client():
     api_key = os.getenv("ELEVENLABS_API_KEY")
@@ -67,7 +67,7 @@ def _add_audio(script, tone: str) -> None:
     script.music_url = _generate_music(tone)
 
 
-# ── App ───────────────────────────────────────────────────────────────────────
+# App
 
 app = FastAPI(title="GitFlix API")
 
