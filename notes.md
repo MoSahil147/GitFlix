@@ -209,3 +209,29 @@ commits_df["sha"] — pick the sha column (we just need any column to count, sha
 .resample("W") — group the rows into weekly buckets ("W" = week)
 .count() — count how many commits fell in each bucket
 .reset_index() — after resample, the week dates are stuck as the index. This moves them back into a normal column so we can work with them
+
+### Character arc assignment
+- Ghost = last commit 180+ days ago AND more than 5 commits
+- Late joiner = first commit after repo midpoint AND more than 10 commits
+- Hero = highest commit count in the whole repo
+- Consistent = everyone else
+- Only top 6 contributors get a character role
+- _arc_summary() writes one sentence per character for the film narration
+
+### Hero commit detection
+- reset_index() needed because we set timestamp as index earlier
+- lines_changed = lines_added + lines_deleted combined
+- idxmax() returns the row number of the highest value
+- iloc[] grabs a row by its row number
+
+### Plot twist detection
+- Filter weekly data to only rows where is_spike is True
+- If no spikes exist, plot_twist = None (handled safely)
+- spike_rows.loc[idxmax()] finds the row with the highest count
+- This becomes the dramatic turning point in Scene S04
+
+### Final return dict
+- repo_age_days = calculated fresh here using datetime.now()
+- commit_series is cleaned — is_spike column removed, only week + count kept
+- ghost_files filtered from file_histories where is_ghost is True
+- This dict is the input to the LangChain agent in director.py
