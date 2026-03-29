@@ -177,9 +177,9 @@ export default function App() {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => { setStage("input"); setScript(null); }} style={{
-            padding: "9px 20px", border: `1px solid ${BORDER}`, borderRadius: 10,
-            background: "transparent", color: "#44445a", cursor: "pointer", fontSize: 13,
-          }}>New repo</button>
+            padding: "9px 20px", border: `1px solid #555577`, borderRadius: 10,
+            background: "transparent", color: "#cccce0", cursor: "pointer", fontSize: 13,
+          }}>← New Film</button>
           <button onClick={handleExport} style={{
             padding: "9px 20px", border: "none", borderRadius: 10,
             background: ACCENT, color: "#fff", fontWeight: 600,

@@ -1,102 +1,98 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-import type { CommitPoint } from "../types";
+import type { Character } from "../types";
 import { Subtitle } from "../Subtitle";
 
+const COLORS = ["#8B5CF6", "#5DCAA5", "#EF9F27", "#e05a5a", "#5566aa"];
+
+function polar(cx: number, cy: number, r: number, deg: number): [number, number] {
+  const rad = ((deg - 90) * Math.PI) / 180;
+  return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+}
+
+function wedge(cx: number, cy: number, outer: number, inner: number, s: number, e: number) {
+  if (e - s >= 360) e = s + 359.99;
+  const [ox1, oy1] = polar(cx, cy, outer, s);
+  const [ox2, oy2] = polar(cx, cy, outer, e);
+  const [ix1, iy1] = polar(cx, cy, inner, e);
+  const [ix2, iy2] = polar(cx, cy, inner, s);
+  const large = e - s > 180 ? 1 : 0;
+  return `M ${ox1} ${oy1} A ${outer} ${outer} 0 ${large} 1 ${ox2} ${oy2} L ${ix1} ${iy1} A ${inner} ${inner} 0 ${large} 0 ${ix2} ${iy2} Z`;
+}
+
 export const S03Rise: React.FC<{
-  commitSeries: CommitPoint[];
+  characters: Character[];
   narration: string;
-}> = ({ commitSeries, narration }) => {
+}> = ({ characters, narration }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
-  const data = commitSeries.slice(0, 52);
-  const maxCount = Math.max(...data.map((d) => d.count), 1);
+  const top = characters.slice(0, 5).filter((c) => c.commit_count > 0);
+  const total = top.reduce((s, c) => s + c.commit_count, 0) || 1;
 
-  // all bars revealed by 75% of the scene
-  const barsToShow = Math.floor(
-    interpolate(frame, [0, durationInFrames * 0.75], [0, data.length], {
-      extrapolateRight: "clamp",
-    })
-  );
+  const CX = 340, CY = 340, OUTER = 240, INNER = 110;
 
-  const CHART_H = 560;
-  // bar width: generous minimum, cap at 56px so wide repos don't overflow
-  const BAR_W = Math.min(56, Math.floor(1560 / Math.max(data.length, 1)) - 4);
+  let cumDeg = 0;
+  const slices = top.map((c, i) => {
+    const pct = c.commit_count / total;
+    const startDeg = cumDeg;
+    const endDeg = cumDeg + pct * 360;
+    cumDeg = endDeg;
+    return { c, pct, startDeg, endDeg, color: COLORS[i % COLORS.length] };
+  });
 
-  const labelOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
-  const axisOpacity  = interpolate(frame, [10, 25], [0, 1], { extrapolateRight: "clamp" });
-
-  // x-axis: show a label every N bars so they don't overlap
-  const labelEvery = data.length <= 12 ? 1 : data.length <= 26 ? 2 : 4;
+  const titleOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div style={{
       width: "100%", height: "100%",
-      background: "radial-gradient(ellipse at 50% 60%, #0a1a0a 0%, #050508 70%)",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      fontFamily: "sans-serif",
-      position: "relative",
+      background: "radial-gradient(ellipse at 40% 50%, #0d0a1a 0%, #050508 70%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: "sans-serif", position: "relative",
+      gap: 80,
     }}>
-      <div style={{ opacity: labelOpacity, fontSize: 18, color: "#5DCAA5", letterSpacing: 5, textTransform: "uppercase", marginBottom: 28 }}>
-        Commit Activity
-      </div>
 
-      <div style={{
-        opacity: axisOpacity,
-        display: "flex", alignItems: "flex-end", gap: 0, position: "relative",
-      }}>
-        {/* y-axis labels */}
-        <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: CHART_H, marginRight: 14, alignItems: "flex-end" }}>
-          {[maxCount, Math.round(maxCount / 2), 0].map((v) => (
-            <div key={v} style={{ fontSize: 14, color: "#4a6a4a", lineHeight: 1, fontWeight: 600 }}>{v}</div>
-          ))}
+      {/* legend */}
+      <div style={{ opacity: titleOpacity }}>
+        <div style={{ fontSize: 14, color: "#8B5CF6", letterSpacing: 5, textTransform: "uppercase", marginBottom: 32 }}>
+          Commit Share
         </div>
-
-        {/* bars + axes */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: CHART_H }}>
-            {data.map((d, i) => {
-              const h = Math.max((d.count / maxCount) * CHART_H, d.count > 0 ? 4 : 0);
-              const visible = i < barsToShow;
-              const isSpike = d.count > maxCount * 0.7;
-              return (
-                <div key={i} style={{
-                  width: BAR_W, height: visible ? h : 0, opacity: visible ? 1 : 0,
-                  background: isSpike
-                    ? "linear-gradient(180deg, #f5c842 0%, #EF9F27 100%)"
-                    : "linear-gradient(180deg, #5DCAA5 0%, #3aaa85 100%)",
-                  transition: "height 0.06s, opacity 0.06s",
-                  borderRadius: "4px 4px 0 0",
-                  boxShadow: isSpike ? "0 0 10px #EF9F2766" : "0 0 6px #5DCAA530",
-                  flexShrink: 0,
-                }} />
-              );
-            })}
-          </div>
-
-          {/* baseline */}
-          <div style={{ width: data.length * (BAR_W + 4), height: 2, background: "#2a3a2a", marginBottom: 8 }} />
-
-          {/* x-axis labels */}
-          <div style={{ display: "flex", gap: 4 }}>
-            {data.map((d, i) => (
-              <div key={i} style={{
-                width: BAR_W, fontSize: 11, color: "#4a6a4a",
-                textAlign: "center", flexShrink: 0,
-                overflow: "hidden", fontWeight: 500,
-              }}>
-                {i % labelEvery === 0
-                  ? d.week.replace(/\d{4}-/, "").replace(/-\d{2}$/, "")
-                  : ""}
+        {slices.map(({ c, pct, color }, i) => {
+          const op = interpolate(frame, [20 + i * 10, 44 + i * 10], [0, 1], { extrapolateRight: "clamp" });
+          const y  = interpolate(frame, [20 + i * 10, 44 + i * 10], [12, 0],  { extrapolateRight: "clamp" });
+          return (
+            <div key={c.login} style={{ opacity: op, transform: `translateY(${y}px)`, display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+              <div style={{ width: 16, height: 16, borderRadius: 4, background: color, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{c.login}</div>
+                <div style={{ fontSize: 13, color: "#44445a", marginTop: 2 }}>
+                  {c.commit_count} commits · {Math.round(pct * 100)}%
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          );
+        })}
       </div>
 
-      <Subtitle text={narration} startFrame={Math.floor(durationInFrames * 0.7)} />
+      {/* donut */}
+      <svg width={CX * 2} height={CY * 2} viewBox={`0 0 ${CX * 2} ${CY * 2}`}>
+        {slices.map(({ startDeg, endDeg, color }, i) => {
+          const progress = interpolate(frame, [15 + i * 8, 60 + i * 8], [0, 1], { extrapolateRight: "clamp" });
+          const animEnd = startDeg + (endDeg - startDeg) * progress;
+          if (animEnd <= startDeg + 0.1) return null;
+          return (
+            <path key={i} d={wedge(CX, CY, OUTER, INNER, startDeg, animEnd)} fill={color} opacity={0.92} />
+          );
+        })}
+        <text x={CX} y={CY - 14} textAnchor="middle" fill="#fff" fontSize={52} fontWeight={800} fontFamily="sans-serif">
+          {top.length}
+        </text>
+        <text x={CX} y={CY + 22} textAnchor="middle" fill="#44445a" fontSize={14} letterSpacing={4} fontFamily="sans-serif">
+          CONTRIBUTORS
+        </text>
+      </svg>
+
+      <Subtitle text={narration} startFrame={Math.floor(durationInFrames * 0.65)} />
     </div>
   );
 };
