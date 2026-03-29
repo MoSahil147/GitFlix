@@ -1,6 +1,12 @@
 import React from "react";
-import { Series, Html5Audio } from "remotion";
+import { Series, Html5Audio, staticFile } from "remotion";
 import type { ScriptJSON } from "./types";
+
+const MUSIC: Record<string, string> = {
+  epic:         staticFile("music/epic.mp3"),
+  documentary:  staticFile("music/documentary.mp3"),
+  casual:       staticFile("music/casual.mp3"),
+};
 import { S01Origin } from "./scenes/S01Origin";
 import { S02Cast } from "./scenes/S02Cast";
 import { S03Rise } from "./scenes/S03Rise";
@@ -31,9 +37,7 @@ const getAudio = (script: ScriptJSON, id: string) =>
 export const GitflixVideo: React.FC<{ script: ScriptJSON }> = ({ script }) => (
   <>
     {/* background music plays across the entire film at low volume */}
-    {script.music_url && (
-      <Html5Audio src={script.music_url} volume={0.18} />
-    )}
+    <Html5Audio src={MUSIC[script.tone] ?? MUSIC.documentary} volume={0.18} loop />
 
     <Series>
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S01 * FPS}>
