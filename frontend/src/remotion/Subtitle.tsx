@@ -6,20 +6,27 @@ interface Props {
   startFrame?: number;
 }
 
-// Splits narration into sentences and shows them one at a time with fade transitions.
+const FPS = 30;
+const MIN_SECONDS_PER_LINE = 4; // never faster than 4 seconds per sentence
+
 export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
 
   if (!text) return null;
 
-  // Split on sentence boundaries
-  const lines = (text.match(/[^.!?]+[.!?]*/g) ?? [text])
+  // Split on sentence boundaries, keep max 3 sentences
+  const allLines = (text.match(/[^.!?]+[.!?]*/g) ?? [text])
     .map((s) => s.trim())
     .filter(Boolean);
+  const lines = allLines.slice(0, 3);
 
   const availableFrames = Math.max(durationInFrames - startFrame, 1);
-  const framesPerLine = Math.floor(availableFrames / lines.length);
+  // each line gets an equal share, but never less than MIN_SECONDS_PER_LINE
+  const framesPerLine = Math.max(
+    Math.floor(availableFrames / lines.length),
+    MIN_SECONDS_PER_LINE * FPS
+  );
 
   if (frame < startFrame) return null;
 
@@ -30,7 +37,7 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
   );
   const lineFrame = elapsed - lineIdx * framesPerLine;
 
-  const FADE = 8;
+  const FADE = 10;
   const fadeIn  = interpolate(lineFrame, [0, FADE], [0, 1], { extrapolateRight: "clamp" });
   const fadeOut = interpolate(lineFrame, [framesPerLine - FADE, framesPerLine], [1, 0], { extrapolateRight: "clamp" });
   const opacity = Math.min(fadeIn, fadeOut);
@@ -42,11 +49,11 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
         bottom: 52,
         left: "50%",
         transform: "translateX(-50%)",
-        background: "rgba(0,0,0,0.72)",
+        background: "rgba(0,0,0,0.76)",
         backdropFilter: "blur(6px)",
-        padding: "10px 32px",
+        padding: "12px 40px",
         borderRadius: 6,
-        maxWidth: 1100,
+        maxWidth: 1200,
         textAlign: "center",
         opacity,
         pointerEvents: "none",
@@ -54,9 +61,9 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
     >
       <span
         style={{
-          fontSize: 20,
-          color: "#d0d0d0",
-          lineHeight: 1.5,
+          fontSize: 22,
+          color: "#e8e8e8",
+          lineHeight: 1.6,
           fontFamily: "sans-serif",
           fontWeight: 300,
           letterSpacing: 0.3,

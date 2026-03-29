@@ -174,9 +174,6 @@ export default function App() {
           <span style={{ fontSize: 13, color: "#333355", marginLeft: 20 }}>
             {script.repo_name} · {script.total_commits} commits · {script.contributor_count} contributors
           </span>
-          <span style={{ fontSize: 11, marginLeft: 16, color: script.music_url ? "#5DCAA5" : "#e05a5a" }}>
-            {script.music_url ? "♪ Audio ready" : "⚠ No audio (check Render logs)"}
-          </span>
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => { setStage("input"); setScript(null); }} style={{

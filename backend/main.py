@@ -107,7 +107,7 @@ async def generate(req: GenerateRequest):
         repo_data  = fetch_repo_data(req.repo_url)
         analytics  = run_analytics(repo_data)
         script     = build_script(analytics, req.tone)
-        _add_audio(script, req.tone)
+        # _add_audio(script, req.tone)  # ElevenLabs disabled (free tier blocked on cloud IPs)
         return script
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -128,12 +128,12 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
             script = build_script(analytics, tone)
 
-            yield f"data: {json.dumps({'stage': 'tts',       'pct': 75, 'msg': 'Recording voiceovers…'})}\n\n"
-            for scene in script.scenes:
-                scene.audio_url = _tts(scene.narration_text)
-
-            yield f"data: {json.dumps({'stage': 'music',     'pct': 90, 'msg': 'Composing background music…'})}\n\n"
-            script.music_url = _generate_music(tone)
+            # ElevenLabs audio disabled (free tier blocked on cloud IPs)
+            # yield f"data: {json.dumps({'stage': 'tts',   'pct': 75, 'msg': 'Recording voiceovers…'})}\n\n"
+            # for scene in script.scenes:
+            #     scene.audio_url = _tts(scene.narration_text)
+            # yield f"data: {json.dumps({'stage': 'music', 'pct': 90, 'msg': 'Composing background music…'})}\n\n"
+            # script.music_url = _generate_music(tone)
 
             yield f"data: {json.dumps({'stage': 'done',      'pct': 100, 'data': script.model_dump()})}\n\n"
 
