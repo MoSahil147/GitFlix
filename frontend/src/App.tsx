@@ -65,14 +65,8 @@ export default function App() {
     es.onerror = () => { setError("Connection failed. Is the backend running?"); setStage("error"); es.close(); };
   };
 
-  const handleExport = async () => {
-    if (!script) return;
-    const res = await fetch(`${API}/render`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(script) });
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${script.repo_name.replace("/", "_")}_gitflix.mp4`;
-    a.click();
+  const handleExport = () => {
+    alert("MP4 export coming soon! For now, use your browser's screen recorder to capture the film.");
   };
 
   const base: React.CSSProperties = {
@@ -207,7 +201,6 @@ export default function App() {
           compositionHeight={1080}
           style={{ width: "100%", maxHeight: "80vh" }}
           controls
-          autoPlay
         />
       </div>
 

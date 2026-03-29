@@ -20,9 +20,9 @@ export const S03Rise: React.FC<{
     })
   );
 
-  const CHART_H = 380;
+  const CHART_H = 520;
   // cap bar width so sparse data (few weeks) doesn't look like skyscrapers
-  const BAR_W = Math.min(40, Math.floor(1400 / Math.max(data.length, 1)) - 3);
+  const BAR_W = Math.min(52, Math.floor(1600 / Math.max(data.length, 1)) - 3);
 
   const labelOpacity = interpolate(frame, [0, 15], [0, 1], { extrapolateRight: "clamp" });
   const axisOpacity  = interpolate(frame, [10, 25], [0, 1], { extrapolateRight: "clamp" });

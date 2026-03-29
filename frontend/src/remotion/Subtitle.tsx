@@ -1,19 +1,39 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 
 interface Props {
   text: string;
-  startFrame?: number; // frame at which subtitle fades in
+  startFrame?: number;
 }
 
-// Renders narration as a cinematic subtitle bar at the bottom of the frame.
+// Splits narration into sentences and shows them one at a time with fade transitions.
 export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
   const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+
   if (!text) return null;
 
-  const opacity = interpolate(frame, [startFrame, startFrame + 12], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  // Split on sentence boundaries
+  const lines = (text.match(/[^.!?]+[.!?]*/g) ?? [text])
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const availableFrames = Math.max(durationInFrames - startFrame, 1);
+  const framesPerLine = Math.floor(availableFrames / lines.length);
+
+  if (frame < startFrame) return null;
+
+  const elapsed = frame - startFrame;
+  const lineIdx = Math.min(
+    Math.floor(elapsed / framesPerLine),
+    lines.length - 1
+  );
+  const lineFrame = elapsed - lineIdx * framesPerLine;
+
+  const FADE = 8;
+  const fadeIn  = interpolate(lineFrame, [0, FADE], [0, 1], { extrapolateRight: "clamp" });
+  const fadeOut = interpolate(lineFrame, [framesPerLine - FADE, framesPerLine], [1, 0], { extrapolateRight: "clamp" });
+  const opacity = Math.min(fadeIn, fadeOut);
 
   return (
     <div
@@ -22,7 +42,7 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
         bottom: 52,
         left: "50%",
         transform: "translateX(-50%)",
-        background: "rgba(0, 0, 0, 0.72)",
+        background: "rgba(0,0,0,0.72)",
         backdropFilter: "blur(6px)",
         padding: "10px 32px",
         borderRadius: 6,
@@ -30,7 +50,6 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
         textAlign: "center",
         opacity,
         pointerEvents: "none",
-        whiteSpace: "normal",
       }}
     >
       <span
@@ -43,7 +62,7 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
           letterSpacing: 0.3,
         }}
       >
-        {text}
+        {lines[lineIdx]}
       </span>
     </div>
   );
