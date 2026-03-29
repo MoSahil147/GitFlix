@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
-import { Player, PlayerRef } from "@remotion/player";
+import { Player } from "@remotion/player";
+import type { PlayerRef } from "@remotion/player";
 import { GitflixVideo } from "./remotion/GitflixVideo";
 import type { ScriptJSON } from "./remotion/types";
 
