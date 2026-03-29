@@ -13,13 +13,13 @@ const FPS = 30;
 
 // cinematic pacing — each scene has enough time to breathe and land
 export const SCENE_DURATIONS = {
-  S01: 7,   // origin — dot → title → contributor → subtitle
-  S02: 10,  // cast   — all character cards stagger in with time to read
-  S03: 15,  // rise   — bar chart builds dramatically week by week
-  S04: 8,   // twist  — slow fade reveal + stats
-  S05: 8,   // ghosts — terminal reveal with pulse effect
-  S06: 12,  // hero   — diff animates in + stats + subtitle
-  S07: 10,  // finale — stats stagger + Gitflix watermark + narration
+  S01: 12,  // origin — dot → title → contributor → subtitle
+  S02: 15,  // cast   — all character cards stagger in with time to read
+  S03: 22,  // rise   — bar chart builds dramatically week by week
+  S04: 13,  // twist  — slow fade reveal + stats
+  S05: 13,  // ghosts — terminal reveal with pulse effect
+  S06: 16,  // hero   — diff animates in + stats + subtitle
+  S07: 14,  // finale — stats stagger + Gitflix watermark + narration
 };
 
 const getNarration = (script: ScriptJSON, id: string) =>

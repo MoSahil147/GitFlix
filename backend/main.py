@@ -31,7 +31,8 @@ def _tts(text: str) -> str | None:
         )
         b64 = base64.b64encode(b"".join(audio_iter)).decode()
         return f"data:audio/mpeg;base64,{b64}"
-    except Exception:
+    except Exception as e:
+        print(f"[ElevenLabs TTS error] {e}")
         return None
 
 
@@ -56,7 +57,8 @@ def _generate_music(tone: str) -> str | None:
         )
         b64 = base64.b64encode(b"".join(audio_iter)).decode()
         return f"data:audio/mpeg;base64,{b64}"
-    except Exception:
+    except Exception as e:
+        print(f"[ElevenLabs music error] {e}")
         return None
 
 
