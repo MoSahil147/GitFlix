@@ -2,10 +2,38 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import json
+import json, os, base64
 from ingestion.github_client import fetch_repo_data
 from analytics.analyzer import run_analytics
 from agent.director import build_script
+
+
+def _tts(text: str) -> str | None:
+    """Generate a voiceover for one scene via ElevenLabs.
+    Returns a base64 data URI (data:audio/mpeg;base64,...) or None if unavailable."""
+    api_key = os.getenv("ELEVENLABS_API_KEY")
+    if not api_key or not text.strip():
+        return None
+    try:
+        from elevenlabs import ElevenLabs
+        client = ElevenLabs(api_key=api_key)
+        # Adam voice — deep cinematic narrator
+        audio_iter = client.text_to_speech.convert(
+            voice_id="pNInz6obpgDQGcFmaJgB",
+            text=text,
+            model_id="eleven_turbo_v2_5",
+        )
+        audio_bytes = b"".join(audio_iter)
+        b64 = base64.b64encode(audio_bytes).decode()
+        return f"data:audio/mpeg;base64,{b64}"
+    except Exception:
+        return None
+
+
+def _add_voiceovers(script) -> None:
+    """Mutate script in-place: generate TTS for each scene's narration."""
+    for scene in script.scenes:
+        scene.audio_url = _tts(scene.narration_text)
 
 # creating the FastAPI app
 app=FastAPI(title="GitFlix API")
@@ -63,6 +91,10 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             # send progress update: stage 3
             yield f"data: {json.dumps({'stage': 'agent', 'pct': 60, 'msg': 'Writing the script...'})}\n\n"
             script = build_script(analytics, tone)
+
+            # send progress update: stage 4 — voiceovers via ElevenLabs (skipped if no key)
+            yield f"data: {json.dumps({'stage': 'tts', 'pct': 85, 'msg': 'Recording voiceovers...'})}\n\n"
+            _add_voiceovers(script)
 
             # send final result: pct 100 means done
             yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': script.model_dump()})}\n\n"

@@ -84,6 +84,7 @@ class Scene(BaseModel):
     duration_secs: int
     narration_text: str
     visual_params: Dict[str, Any] = {}   # extra data each scene needs
+    audio_url: Optional[str] = None      # base64 data URI for ElevenLabs TTS voiceover
 
 # ScriptJSON = the master object the agent returns
 # contains everything needed to render the full film

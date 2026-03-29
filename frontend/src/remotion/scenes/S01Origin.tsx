@@ -1,9 +1,6 @@
 import React from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 
-const BG = "#0a0a0f";
-const ACCENT = "#5DCAA5";
-
 export const S01Origin: React.FC<{
   repoName: string;
   firstContributor: string;
@@ -11,63 +8,54 @@ export const S01Origin: React.FC<{
 }> = ({ repoName, firstContributor, narration }) => {
   const frame = useCurrentFrame();
 
-  // small dot appears first — like a single commit being born
-  const dotOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
-  const dotScale = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
-
-  // repo name fades in after the dot
-  const titleOpacity = interpolate(frame, [40, 70], [0, 1], { extrapolateRight: "clamp" });
-
-  // contributor name fades in after title
-  const subtitleOpacity = interpolate(frame, [80, 110], [0, 1], { extrapolateRight: "clamp" });
-
-  // narration fades in last
-  const narrationOpacity = interpolate(frame, [130, 160], [0, 1], { extrapolateRight: "clamp" });
+  const dotOpacity  = interpolate(frame, [0, 8],  [0, 1], { extrapolateRight: "clamp" });
+  const dotScale    = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
+  const titleOpacity   = interpolate(frame, [15, 30], [0, 1], { extrapolateRight: "clamp" });
+  const subtitleOpacity = interpolate(frame, [30, 45], [0, 1], { extrapolateRight: "clamp" });
+  const narrationOpacity = interpolate(frame, [55, 70], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div style={{
       width: "100%", height: "100%",
-      background: BG,
+      background: "radial-gradient(ellipse at 50% 40%, #12122a 0%, #050508 70%)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif",
     }}>
-      {/* small green dot — the origin point */}
+      {/* origin dot */}
       <div style={{
-        width: 12, height: 12,
-        borderRadius: "50%",
-        background: ACCENT,
+        width: 14, height: 14, borderRadius: "50%",
+        background: "#8B5CF6",
         opacity: dotOpacity,
         transform: `scale(${dotScale})`,
-        marginBottom: 60,
+        marginBottom: 48,
+        boxShadow: "0 0 40px #8B5CF6aa",
       }} />
 
       {/* repo name */}
       <div style={{
-        fontSize: 72, fontWeight: 800,
-        color: "#ffffff",
+        fontSize: 80, fontWeight: 900, color: "#fff",
         opacity: titleOpacity,
-        letterSpacing: -2,
-        marginBottom: 16,
+        letterSpacing: -3, marginBottom: 16,
+        textShadow: "0 0 60px #8B5CF644",
       }}>
         {repoName}
       </div>
 
       {/* first contributor */}
       <div style={{
-        fontSize: 28, color: "#888888",
-        opacity: subtitleOpacity,
-        marginBottom: 80,
+        fontSize: 26, color: "#555570",
+        opacity: subtitleOpacity, marginBottom: 64,
       }}>
-        started by {firstContributor}
+        started by <span style={{ color: "#8B5CF6", fontWeight: 600 }}>{firstContributor}</span>
       </div>
 
-      {/* narration text */}
+      {/* narration */}
       <div style={{
-        fontSize: 22, color: "#aaaaaa",
+        fontSize: 20, color: "#44445a",
         opacity: narrationOpacity,
-        maxWidth: 900, textAlign: "center",
-        lineHeight: 1.6,
+        maxWidth: 800, textAlign: "center", lineHeight: 1.7,
+        fontStyle: "italic",
       }}>
         {narration}
       </div>

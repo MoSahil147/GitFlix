@@ -31,6 +31,7 @@ export interface Scene {
   duration_secs: number;
   narration_text: string;
   visual_params: Record<string, any>;
+  audio_url?: string; // base64 data URI from ElevenLabs TTS
 }
 
 // the master object — holds everything needed to render the film

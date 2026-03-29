@@ -8,88 +8,57 @@ export const S07FinalState: React.FC<{
 }> = ({ script, narration }) => {
   const frame = useCurrentFrame();
 
-  // the 4 stats to show at the end
   const STATS = [
     { label: "Commits",      value: script.total_commits.toLocaleString() },
-    { label: "Contributors", value: script.contributor_count.toString() },
-    { label: "Days active",  value: script.repo_age_days.toString() },
-    { label: "Language",     value: script.primary_language ?? "—" },
+    { label: "Contributors", value: script.contributor_count.toString()    },
+    { label: "Days active",  value: script.repo_age_days.toString()        },
+    { label: "Language",     value: script.primary_language ?? "—"         },
   ];
+
+  const titleOpacity   = interpolate(frame, [0, 18], [0, 1], { extrapolateRight: "clamp" });
+  const taglineOpacity = interpolate(frame, [14, 30], [0, 1], { extrapolateRight: "clamp" });
+  const narOpacity     = interpolate(frame, [150, 175], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div style={{
       width: "100%", height: "100%",
-      background: "#0a0a0f",
+      background: "radial-gradient(ellipse at 50% 40%, #12102a 0%, #050508 70%)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif",
     }}>
-      {/* repo name fades in first */}
-      <div style={{
-        opacity: interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" }),
-        fontSize: 52, fontWeight: 800,
-        color: "#fff", marginBottom: 16,
-      }}>
+      <div style={{ opacity: titleOpacity, fontSize: 64, fontWeight: 900, color: "#fff", marginBottom: 12, letterSpacing: -2 }}>
         {script.repo_name}
       </div>
 
-      {/* tagline fades in second */}
-      <div style={{
-        opacity: interpolate(frame, [20, 50], [0, 1], { extrapolateRight: "clamp" }),
-        fontSize: 20, color: "#555",
-        fontStyle: "italic", marginBottom: 72,
-      }}>
-        Every repo has a story.
+      <div style={{ opacity: taglineOpacity, fontSize: 18, color: "#333355", fontStyle: "italic", marginBottom: 64 }}>
+        Every repository has a story.
       </div>
 
-      {/* stats — each one staggered */}
-      <div style={{
-        display: "flex", gap: 48,
-        marginBottom: 80,
-      }}>
+      {/* stat row */}
+      <div style={{ display: "flex", gap: 56, marginBottom: 72 }}>
         {STATS.map((stat, i) => {
-          // each stat appears 12 frames after the previous one
-          const opacity = interpolate(
-            frame, [40 + i * 12, 70 + i * 12], [0, 1],
-            { extrapolateRight: "clamp" }
-          );
-          const y = interpolate(
-            frame, [40 + i * 12, 70 + i * 12], [20, 0],
-            { extrapolateRight: "clamp" }
-          );
-
+          const op = interpolate(frame, [30 + i * 8, 50 + i * 8], [0, 1], { extrapolateRight: "clamp" });
+          const y  = interpolate(frame, [30 + i * 8, 50 + i * 8], [16, 0], { extrapolateRight: "clamp" });
           return (
-            <div key={stat.label} style={{
-              opacity,
-              transform: `translateY(${y}px)`,
-              textAlign: "center",
-            }}>
-              {/* big number in green */}
-              <div style={{
-                fontSize: 48, fontWeight: 700,
-                color: "#5DCAA5",
-              }}>
-                {stat.value}
-              </div>
-              {/* label underneath */}
-              <div style={{
-                fontSize: 14, color: "#555",
-                textTransform: "uppercase", letterSpacing: 2,
-              }}>
-                {stat.label}
-              </div>
+            <div key={stat.label} style={{ opacity: op, transform: `translateY(${y}px)`, textAlign: "center" }}>
+              <div style={{ fontSize: 52, fontWeight: 800, color: "#8B5CF6", lineHeight: 1 }}>{stat.value}</div>
+              <div style={{ fontSize: 11, color: "#2a2a44", textTransform: "uppercase", letterSpacing: 3, marginTop: 8 }}>{stat.label}</div>
             </div>
           );
         })}
       </div>
 
-      {/* narration fades in last */}
+      {/* Gitflix watermark */}
       <div style={{
-        opacity: interpolate(frame, [130, 160], [0, 1], { extrapolateRight: "clamp" }),
-        fontSize: 18, color: "#444",
-        maxWidth: 800, textAlign: "center",
-        lineHeight: 1.6,
+        opacity: interpolate(frame, [90, 110], [0, 1], { extrapolateRight: "clamp" }),
+        fontSize: 22, fontWeight: 900, fontStyle: "italic",
+        color: "#8B5CF6", letterSpacing: -1, marginBottom: 40,
       }}>
+        Gitflix
+      </div>
+
+      <div style={{ opacity: narOpacity, fontSize: 15, color: "#2a2a44", maxWidth: 720, textAlign: "center", fontStyle: "italic", lineHeight: 1.7 }}>
         {narration}
       </div>
     </div>
