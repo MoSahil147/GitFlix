@@ -248,3 +248,12 @@ commits_df["sha"] — pick the sha column (we just need any column to count, sha
 ### Literal type
 - Literal["hero", "ghost"] means only those exact values are allowed
 - Pydantic will throw an error if anything else is passed in
+
+## agent/tools.py
+
+- 5 tools, each reads one part of the analytics dict
+- Each tool takes a JSON string as input and returns a JSON string
+- @tool decorator is what makes LangChain recognise these as agent tools
+- json.loads() converts the string back to a dict inside each tool
+- json.dumps() converts the result back to a string to return
+- Agent uses these tools to gather story data before writing narration
