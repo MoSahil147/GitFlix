@@ -35,37 +35,52 @@ export const S02Cast: React.FC<{
         The Cast
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "center", maxWidth: 1400 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 28, justifyContent: "center", maxWidth: 1600 }}>
         {characters.slice(0, 6).map((char, i) => {
-          const delay = i * 8;
+          const delay   = i * 8;
           const opacity = interpolate(frame, [delay + 12, delay + 28], [0, 1], { extrapolateRight: "clamp" });
           const y       = interpolate(frame, [delay + 12, delay + 28], [24, 0], { extrapolateRight: "clamp" });
 
           return (
             <div key={char.login} style={{
               opacity, transform: `translateY(${y}px)`,
+              position: "relative",
               background: "#0d0d18",
               border: `1px solid ${char.color}40`,
-              borderRadius: 16, padding: "24px 28px", width: 240, textAlign: "center",
-              boxShadow: `0 0 30px ${char.color}18`,
+              borderRadius: 20, padding: "36px 36px", width: 300, textAlign: "center",
+              boxShadow: `0 0 60px ${char.color}33, 0 0 120px ${char.color}18`,
             }}>
+              {/* light bloom behind the card */}
               <div style={{
-                width: 56, height: 56, borderRadius: "50%",
-                background: char.color,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 22, fontWeight: 700, color: "#050508",
-                margin: "0 auto 14px",
-              }}>
-                {char.login.slice(0, 2).toUpperCase()}
-              </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 6 }}>
-                {char.login}
-              </div>
-              <div style={{ fontSize: 11, color: char.color, textTransform: "uppercase", letterSpacing: 2, marginBottom: 10 }}>
-                {ROLE_LABELS[char.role]}
-              </div>
-              <div style={{ fontSize: 12, color: "#2a2a40", lineHeight: 1.6 }}>
-                {char.arc_summary}
+                position: "absolute", top: "-40%", left: "50%",
+                transform: "translateX(-50%)",
+                width: 340, height: 340,
+                borderRadius: "50%",
+                background: `radial-gradient(circle, ${char.color}28 0%, transparent 70%)`,
+                pointerEvents: "none", zIndex: 0,
+              }} />
+
+              {/* card content — sits above the bloom */}
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <div style={{
+                  width: 80, height: 80, borderRadius: "50%",
+                  background: char.color,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 30, fontWeight: 700, color: "#050508",
+                  margin: "0 auto 18px",
+                  boxShadow: `0 0 24px ${char.color}88`,
+                }}>
+                  {char.login.slice(0, 2).toUpperCase()}
+                </div>
+                <div style={{ fontSize: 26, fontWeight: 700, color: "#fff", marginBottom: 8 }}>
+                  {char.login}
+                </div>
+                <div style={{ fontSize: 12, color: char.color, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>
+                  {ROLE_LABELS[char.role]}
+                </div>
+                <div style={{ fontSize: 14, color: "#2a2a40", lineHeight: 1.6 }}>
+                  {char.arc_summary}
+                </div>
               </div>
             </div>
           );
