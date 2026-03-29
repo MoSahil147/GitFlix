@@ -1,0 +1,16 @@
+# this buddy here will tell us how to build and run the background when we push code
+# Instead of clicking through a UI to configure your server, you define everything in one file — what type of service, build command, start command, env vars, etc.
+
+services:
+  - type: web
+    name: gitflix-api
+    env: python
+    buildCommand: pip install uv && uv sync
+    startCommand: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
