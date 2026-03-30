@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { useCurrentFrame, interpolate } from "remotion";
 import type { Character } from "../types";
 import { Subtitle } from "../Subtitle";
 
@@ -25,7 +25,6 @@ export const S03Rise: React.FC<{
   narration: string;
 }> = ({ characters, narration }) => {
   const frame = useCurrentFrame();
-  const { durationInFrames } = useVideoConfig();
 
   const top = characters.slice(0, 5).filter((c) => c.commit_count > 0);
   const total = top.reduce((s, c) => s + c.commit_count, 0) || 1;
@@ -65,7 +64,7 @@ export const S03Rise: React.FC<{
               <div style={{ width: 16, height: 16, borderRadius: 4, background: color, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 22, fontWeight: 700, color: "#fff" }}>{c.login}</div>
-                <div style={{ fontSize: 13, color: "#44445a", marginTop: 2 }}>
+                <div style={{ fontSize: 16, color: "#6a6a80", marginTop: 4 }}>
                   {c.commit_count} commits · {Math.round(pct * 100)}%
                 </div>
               </div>
@@ -92,7 +91,7 @@ export const S03Rise: React.FC<{
         </text>
       </svg>
 
-      <Subtitle text={narration} startFrame={Math.floor(durationInFrames * 0.65)} />
+      <Subtitle text={narration} startFrame={90} />
     </div>
   );
 };

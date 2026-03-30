@@ -28,7 +28,7 @@ export const S06HeroCommit: React.FC<{
     interpolate(frame, [25, 100], [0, DIFF_LINES.length], { extrapolateRight: "clamp" })
   );
 
-  const statsOpacity = interpolate(frame, [105, 125], [0, 1], { extrapolateRight: "clamp" });
+  const statsOpacity = interpolate(frame, [75, 95], [0, 1], { extrapolateRight: "clamp" });
 
   return (
     <div style={{
@@ -81,7 +81,7 @@ export const S06HeroCommit: React.FC<{
         </div>
       </div>
 
-      <Subtitle text={narration} startFrame={200} />
+      <Subtitle text={narration} startFrame={120} />
     </div>
   );
 };

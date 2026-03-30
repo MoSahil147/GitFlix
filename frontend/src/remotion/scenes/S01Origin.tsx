@@ -12,7 +12,9 @@ export const S01Origin: React.FC<{
   const dotOpacity  = interpolate(frame, [0, 8],   [0, 1], { extrapolateRight: "clamp" });
   const dotScale    = interpolate(frame, [0, 12],  [0, 1], { extrapolateRight: "clamp" });
   const titleOpacity    = interpolate(frame, [15, 35], [0, 1], { extrapolateRight: "clamp" });
-  const subtitleOpacity = interpolate(frame, [35, 55], [0, 1], { extrapolateRight: "clamp" });
+  const titleY          = interpolate(frame, [15, 35], [20,  0], { extrapolateRight: "clamp" });
+  const subtitleOpacity = interpolate(frame, [45, 68], [0, 1], { extrapolateRight: "clamp" });
+  const subtitleY       = interpolate(frame, [45, 68], [16,  0], { extrapolateRight: "clamp" });
 
   return (
     <div style={{
@@ -37,7 +39,8 @@ export const S01Origin: React.FC<{
       <div style={{
         fontSize: 84, fontWeight: 900, color: "#fff",
         opacity: titleOpacity,
-        letterSpacing: -3, marginBottom: 18,
+        transform: `translateY(${titleY}px)`,
+        letterSpacing: -3, marginBottom: 40,
         textShadow: "0 0 60px #8B5CF644",
       }}>
         {repoName}
@@ -45,8 +48,9 @@ export const S01Origin: React.FC<{
 
       {/* first contributor */}
       <div style={{
-        fontSize: 28, color: "#333355",
+        fontSize: 26, color: "#333355",
         opacity: subtitleOpacity,
+        transform: `translateY(${subtitleY}px)`,
       }}>
         started by{" "}
         <span style={{ color: "#8B5CF6", fontWeight: 600 }}>{firstContributor}</span>

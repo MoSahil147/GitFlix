@@ -15,8 +15,17 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
 
   if (!text) return null;
 
+  // Strip date references — user doesn't want dates in subtitles
+  const stripped = text
+    .replace(/\b(on|since|in|from|as of)\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\.?\s+\d{4}\b/gi, "")
+    .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\.?\s+\d{4}\b/gi, "")
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "")
+    .replace(/\b(on|since|in|from)\s+\d{4}\b/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
   // Split on sentence boundaries, keep max 3 sentences
-  const allLines = (text.match(/[^.!?]+[.!?]*/g) ?? [text])
+  const allLines = (stripped.match(/[^.!?]+[.!?]*/g) ?? [stripped])
     .map((s) => s.trim())
     .filter(Boolean);
   const lines = allLines.slice(0, 3);

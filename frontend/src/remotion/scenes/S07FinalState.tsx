@@ -62,7 +62,7 @@ export const S07FinalState: React.FC<{
         Gitflix
       </div>
 
-      <Subtitle text={narration} startFrame={180} />
+      <Subtitle text={narration} startFrame={90} />
     </div>
   );
 };

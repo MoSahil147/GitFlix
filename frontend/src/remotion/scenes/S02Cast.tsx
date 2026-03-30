@@ -41,22 +41,27 @@ export const S02Cast: React.FC<{
           const opacity = interpolate(frame, [delay + 12, delay + 28], [0, 1], { extrapolateRight: "clamp" });
           const y       = interpolate(frame, [delay + 12, delay + 28], [24, 0], { extrapolateRight: "clamp" });
 
+          // flicker: each card has its own phase offset so they don't all pulse together
+          const phase = i * 1.37;
+          const flicker = 0.55 + 0.45 * Math.abs(Math.sin(frame * 0.09 + phase));
+          const borderFlicker = 0.18 + 0.22 * Math.abs(Math.sin(frame * 0.11 + phase + 0.5));
+
           return (
             <div key={char.login} style={{
               opacity, transform: `translateY(${y}px)`,
               position: "relative",
               background: "#0d0d18",
-              border: `1px solid ${char.color}40`,
+              border: `1px solid ${char.color}${Math.round(borderFlicker * 255).toString(16).padStart(2, "0")}`,
               borderRadius: 20, padding: "36px 36px", width: 300, textAlign: "center",
-              boxShadow: `0 0 60px ${char.color}33, 0 0 120px ${char.color}18`,
+              boxShadow: `0 0 ${40 + 30 * flicker}px ${char.color}${Math.round(flicker * 0.3 * 255).toString(16).padStart(2, "0")}`,
             }}>
-              {/* light bloom behind the card */}
+              {/* flickering light bloom behind the card */}
               <div style={{
                 position: "absolute", top: "-40%", left: "50%",
                 transform: "translateX(-50%)",
                 width: 340, height: 340,
                 borderRadius: "50%",
-                background: `radial-gradient(circle, ${char.color}28 0%, transparent 70%)`,
+                background: `radial-gradient(circle, ${char.color}${Math.round(flicker * 0.22 * 255).toString(16).padStart(2, "0")} 0%, transparent 70%)`,
                 pointerEvents: "none", zIndex: 0,
               }} />
 

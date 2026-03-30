@@ -22,6 +22,8 @@ export const SCENE_DURATIONS = {
   S07: 14,  // finale
 };
 
+const TOTAL_FRAMES = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0) * FPS;
+
 const MUSIC: Record<string, string> = {
   epic:         staticFile("music/epic.mp3"),
   documentary:  staticFile("music/documentary.mp3"),
@@ -48,7 +50,10 @@ const Fade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 export const GitflixVideo: React.FC<{ script: ScriptJSON }> = ({ script }) => (
   <>
     {/* background music — stops exactly when video ends */}
-    <Html5Audio src={MUSIC[script.tone] ?? MUSIC.documentary} volume={0.18} />
+    <Html5Audio
+      src={MUSIC[script.tone] ?? MUSIC.documentary}
+      volume={(frame) => interpolate(frame, [TOTAL_FRAMES - 60, TOTAL_FRAMES], [0.18, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })}
+    />
 
     <Series>
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S01 * FPS}>
