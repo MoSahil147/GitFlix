@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json, os, base64
+from dotenv import load_dotenv
+load_dotenv()
 from ingestion.github_client import fetch_repo_data
 from analytics.analyzer import run_analytics
 from agent.director import build_script
@@ -10,14 +12,14 @@ from agent.director import build_script
 
 # Groq TTS helpers
 
-# voice per tone — PlayAI voices available on Groq playai-tts
+# voice per tone — Orpheus voices (canopylabs/orpheus-v1-english on Groq)
 _TONE_VOICE = {
-    "epic":         "Fritz-PlayAI",   # authoritative male narrator
-    "documentary":  "Arista-PlayAI",  # calm professional female narrator
-    "casual":       "Jade-PlayAI",    # friendly female voice
+    "epic":         "leo",      # deep masculine narrator
+    "documentary":  "leah",     # calm neutral narrator
+    "casual":       "jessica",  # warm friendly voice
 }
 
-def _groq_tts(text: str, voice: str = "Arista-PlayAI") -> str | None:
+def _groq_tts(text: str, voice: str = "leah") -> str | None:
     """TTS for one scene narration via Groq Orpheus. Returns base64 WAV data URI or None."""
     from groq import Groq
     api_key = os.getenv("GROQ_API_KEY")
@@ -31,7 +33,7 @@ def _groq_tts(text: str, voice: str = "Arista-PlayAI") -> str | None:
     try:
         client = Groq(api_key=api_key)
         response = client.audio.speech.create(
-            model="playai-tts",
+            model="canopylabs/orpheus-v1-english",
             voice=voice,
             input=text,
             response_format="wav",
@@ -47,7 +49,7 @@ def _groq_tts(text: str, voice: str = "Arista-PlayAI") -> str | None:
 
 def _add_audio(script, tone: str) -> None:
     """Mutate script in-place: generate TTS per scene via Groq."""
-    voice = _TONE_VOICE.get(tone, "Arista-PlayAI")
+    voice = _TONE_VOICE.get(tone, "leah")
     for scene in script.scenes:
         scene.audio_url = _groq_tts(scene.narration_text, voice)
 
@@ -77,7 +79,7 @@ class TTSRequest(BaseModel):
 # POST /tts — generate a single TTS clip, useful for testing
 @app.post("/tts")
 async def tts(req: TTSRequest):
-    audio_url = _groq_tts(req.text, voice="Arista-PlayAI")
+    audio_url = _groq_tts(req.text, voice="leah")
     if not audio_url:
         raise HTTPException(status_code=503, detail="Groq TTS not configured or request failed")
     return {"audio_url": audio_url}

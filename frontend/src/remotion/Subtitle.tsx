@@ -15,18 +15,9 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
 
   if (!text) return null;
 
-  // Strip date references — user doesn't want dates in subtitles
+  // Strip raw ISO date formats (ugly in subtitles) — keep natural language dates/years
   const stripped = text
-    // ISO dates: 2024-01-15
-    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "")
-    // Month Day Year: "January 15, 2024" or "Jan 15 2024"
-    .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\.?\s+\d{1,2},?\s+\d{4}\b/gi, "")
-    // Month Year: "January 2024" or "Jan 2024"
-    .replace(/\b(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\.?\s+\d{4}\b/gi, "")
-    // Preposition + year: "in 2024", "of 2023", "since 2022", "by 2025"
-    .replace(/\b(on|in|of|since|from|by|until|through|during|before|after|as of)\s+(19|20)\d{2}\b/gi, "")
-    // Standalone 4-digit year (only 19xx or 20xx)
-    .replace(/\b(19|20)\d{2}\b/g, "")
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "")   // 2024-01-15 → removed
     .replace(/\s{2,}/g, " ")
     .trim();
 

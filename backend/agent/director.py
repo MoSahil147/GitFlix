@@ -55,23 +55,36 @@ Tone guide:
     # narrate() sends context to the LLM and gets back 2-3 sentences
     # if LLM fails, it returns the fallback from SCENE_TEMPLATES
     def narrate(scene_id: str, context: str, fallback: str) -> str:
-        prompt = f"{SYSTEM_PROMPT}\n\nContext: {context}\n\nWrite 2-3 plain sentences of narration. Output ONLY the sentences — nothing else.\nDo NOT start with Scene, S0, a number, or any label. Do NOT use parentheses, brackets, asterisks, or stage directions. Do NOT mention music, visuals, or the film itself. Do NOT mention any specific dates, years, months, or time periods — speak in relative terms like 'early on', 'over time', 'eventually', 'at its peak'."
+        prompt = (
+            f"{SYSTEM_PROMPT}\n\nContext: {context}\n\n"
+            "Write 2-3 plain sentences of narration. Output ONLY the sentences — nothing else.\n"
+            "Rules:\n"
+            "- Do NOT start with a scene label, number, or title.\n"
+            "- Do NOT use parentheses, brackets, asterisks, or any stage directions.\n"
+            "- Do NOT mention music, visuals, or the film itself.\n"
+            "- You MAY mention dates or years, but ONLY if they are explicitly stated in the Context above. Never guess, approximate, or invent any date or year.\n"
+            "- Do NOT describe the manner or tone of delivery — no words like 'warmly', 'excitedly', 'solemnly', 'dramatically', 'thoughtfully', 'passionately', 'quietly', 'boldly'. Just write the narration.\n"
+            "- Do NOT include meta-commentary. Write as if reading aloud to an audience."
+        )
         try:
             return llm.invoke(prompt).content.strip()
         except Exception:
             return fallback
         
 # map each scene to the context it needs for narration
-    first_week = analytics["commit_series"][0]["week"] if analytics.get("commit_series") else "unknown"
+    # dates are passed explicitly so the LLM uses the real values, not guesses
+    first_week  = analytics["commit_series"][0]["week"][:4]  if analytics.get("commit_series") else None   # just the year e.g. "2023"
+    latest_week = analytics["commit_series"][-1]["week"][:4] if analytics.get("commit_series") else None
+    twist_week  = plot_twist_raw.get("week", "")[:4] if plot_twist_raw.get("week") else None  # year only
 
     context_map = {
-        "S01": f"First commit by {contributors[0]['login'] if contributors else 'unknown'}",
-        "S02": f"Top contributors: {[c['login'] for c in contributors[:3]]}",
-        "S03": f"Repo grew to {analytics['total_commits']} commits over {analytics['repo_age_days']} days",
-        "S04": f"Plot twist data: {plot_twist_raw}",
-        "S05": f"Ghost files: {ghost_files[:5]}",
-        "S06": f"Hero commit: {hero_raw.get('message', '')} by {hero_raw.get('author_login', '')}",
-        "S07": f"Final stats: {analytics['total_commits']} commits, {analytics['contributor_count']} contributors",
+        "S01": f"Repository '{repo_name}' started by {contributors[0]['login'] if contributors else 'unknown'}{f' in {first_week}' if first_week else ''}. {analytics['total_commits']} total commits.",
+        "S02": f"Top contributors: {[c['login'] for c in contributors[:3]]}. {analytics['contributor_count']} total contributors.",
+        "S03": f"Repository grew to {analytics['total_commits']} commits across {analytics['contributor_count']} contributors over {analytics['repo_age_days']} days.",
+        "S04": f"Most dramatic week: {plot_twist_raw.get('commit_count', 0)} commits{f' in {twist_week}' if twist_week else ''}, type: {plot_twist_raw.get('type', 'spike')}.",
+        "S05": f"Ghost files not touched in 180+ days: {ghost_files[:5]}",
+        "S06": f"Biggest single commit: '{hero_raw.get('message', '')}' by {hero_raw.get('author_login', '')}. Changed {hero_raw.get('lines_changed', 0)} lines.",
+        "S07": f"Final state{f' as of {latest_week}' if latest_week else ''}: {analytics['total_commits']} commits, {analytics['contributor_count']} contributors, primary language: {analytics.get('primary_language', 'unknown')}.",
     }
 
     # build all 7 scenes
