@@ -1,5 +1,5 @@
 import React from "react";
-import { useCurrentFrame, interpolate } from "remotion";
+import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import type { Character } from "../types";
 import { Subtitle } from "../Subtitle";
 
@@ -25,6 +25,11 @@ export const S03Rise: React.FC<{
   narration: string;
 }> = ({ characters, narration }) => {
   const frame = useCurrentFrame();
+  const { durationInFrames } = useVideoConfig();
+
+  // fan-close: wedges sweep back ~70 frames before scene ends
+  const CLOSE_START = durationInFrames - 70;
+  const CLOSE_END   = durationInFrames - 10;
 
   const top = characters.slice(0, 5).filter((c) => c.commit_count > 0);
   const total = top.reduce((s, c) => s + c.commit_count, 0) || 1;
@@ -76,7 +81,9 @@ export const S03Rise: React.FC<{
       {/* donut */}
       <svg width={CX * 2} height={CY * 2} viewBox={`0 0 ${CX * 2} ${CY * 2}`}>
         {slices.map(({ startDeg, endDeg, color }, i) => {
-          const progress = interpolate(frame, [15 + i * 8, 60 + i * 8], [0, 1], { extrapolateRight: "clamp" });
+          const openProgress  = interpolate(frame, [15 + i * 8, 60 + i * 8], [0, 1], { extrapolateRight: "clamp" });
+          const closeProgress = interpolate(frame, [CLOSE_START, CLOSE_END], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+          const progress = openProgress * (1 - closeProgress);
           const animEnd = startDeg + (endDeg - startDeg) * progress;
           if (animEnd <= startDeg + 0.1) return null;
           return (

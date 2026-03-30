@@ -28,6 +28,7 @@ export const S07FinalState: React.FC<{
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif",
       position: "relative",
+      paddingBottom: 160,
     }}>
       <div style={{ opacity: titleOpacity, fontSize: 68, fontWeight: 900, color: "#fff", marginBottom: 14, letterSpacing: -2 }}>
         {script.repo_name}
