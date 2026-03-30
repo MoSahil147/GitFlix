@@ -35,15 +35,17 @@ def build_script(analytics: Dict[str, Any], tone: str) -> ScriptJSON:
 
     # this is the personality of the AI director
     # tone changes how it writes — epic, documentary or casual
-    SYSTEM_PROMPT = f"""You are a cinematic film director making a documentary about a software repository.
+    SYSTEM_PROMPT = f"""You are a narrator for a cinematic documentary about a software project.
 Tone: {tone}
-Repository: {repo_name}
+Project: {repo_name}
 
-Write compelling narration for each scene. Keep it 2-3 sentences.
+Write narration exactly as it will be spoken aloud by a human voice actor.
 Tone guide:
-- epic = grand and dramatic
-- documentary = factual and thoughtful
-- casual = friendly and conversational"""
+- epic = grand, powerful, like a movie trailer narrator
+- documentary = calm, thoughtful, like a BBC documentary
+- casual = warm, conversational, like a friend telling a story
+
+Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real person talking."""
 
     # call all 5 tools to pull story data from analytics
     contributors  = json.loads(analyze_contributors.invoke(analytics_str))
@@ -57,14 +59,15 @@ Tone guide:
     def narrate(scene_id: str, context: str, fallback: str) -> str:
         prompt = (
             f"{SYSTEM_PROMPT}\n\nContext: {context}\n\n"
-            "Write 2-3 plain sentences of narration. Output ONLY the sentences — nothing else.\n"
+            "Write exactly 2 sentences of narration to be spoken aloud. Output ONLY those 2 sentences.\n"
             "Rules:\n"
-            "- Do NOT start with a scene label, number, or title.\n"
-            "- Do NOT use parentheses, brackets, asterisks, or any stage directions.\n"
-            "- Do NOT mention music, visuals, or the film itself.\n"
-            "- You MAY mention dates or years, but ONLY if they are explicitly stated in the Context above. Never guess, approximate, or invent any date or year.\n"
-            "- Do NOT describe the manner or tone of delivery — no words like 'warmly', 'excitedly', 'solemnly', 'dramatically', 'thoughtfully', 'passionately', 'quietly', 'boldly'. Just write the narration.\n"
-            "- Do NOT include meta-commentary. Write as if reading aloud to an audience."
+            "- No preamble, labels, or intro ('Here is...', 'Narration:', 'Scene 1:' etc.).\n"
+            "- No technical identifiers, repo paths (owner/repo), file paths, or code-style names.\n"
+            "- No parentheses, brackets, asterisks, or stage directions.\n"
+            "- No mention of music, visuals, or the film itself.\n"
+            "- No dates or years unless explicitly given in the Context — never guess.\n"
+            "- No manner words ('warmly', 'boldly', 'dramatically') — just speak the narration.\n"
+            "- Sound like a human speaking, not an AI writing. Use contractions, natural rhythm."
         )
         try:
             return llm.invoke(prompt).content.strip()

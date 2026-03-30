@@ -19,6 +19,22 @@ _TONE_VOICE = {
     "casual":       "autumn",   # warm friendly female
 }
 
+def _clean_narration(text: str) -> str:
+    """Make narration human-speakable: strip preamble, technical strings, and limit length."""
+    import re
+    # Remove LLM preamble like "Here's a cinematic narration:" or "Scene 1:"
+    text = re.sub(r"^(here'?s?\s+[\w\s]*:|scene\s+\w+:|narration:|note:)[^\n]*\n?", "", text, flags=re.IGNORECASE)
+    # Replace owner/repo paths with just the repo part, humanised
+    text = re.sub(r'\b[\w.-]+/([\w.-]+)\b', lambda m: m.group(1).replace('-', ' ').replace('_', ' '), text)
+    # Replace remaining hyphens/underscores in technical identifiers with spaces
+    text = re.sub(r'\b([a-z0-9]{2,})[-_]([a-z0-9])', lambda m: m.group(1) + ' ' + m.group(2), text, flags=re.IGNORECASE)
+    # Clean up extra whitespace
+    text = re.sub(r'\s{2,}', ' ', text).strip()
+    # Keep only first 2 sentences to stay within token budget
+    sentences = re.findall(r"[^.!?]+[.!?]+", text)
+    return " ".join(sentences[:2]).strip() or text[:300].strip()
+
+
 def _groq_tts(text: str, voice: str = "diana") -> str | None:
     """TTS for one scene narration via Groq Orpheus. Returns base64 WAV data URI or None."""
     from groq import Groq
@@ -26,16 +42,17 @@ def _groq_tts(text: str, voice: str = "diana") -> str | None:
     if not api_key:
         print("[Groq TTS] GROQ_API_KEY not set — skipping TTS")
         return None
-    if not text.strip():
+    clean = _clean_narration(text)
+    if not clean:
         print("[Groq TTS] empty text — skipping")
         return None
-    print(f"[Groq TTS] generating for voice={voice}, text={text[:60]!r}…")
+    print(f"[Groq TTS] generating for voice={voice}, text={clean[:60]!r}…")
     try:
         client = Groq(api_key=api_key)
         response = client.audio.speech.create(
             model="canopylabs/orpheus-v1-english",
             voice=voice,
-            input=text,
+            input=clean,
             response_format="wav",
         )
         audio_bytes = response.read()
@@ -114,7 +131,9 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             print(f"[TTS] starting — voice={voice}, key_set={bool(os.getenv('GROQ_API_KEY'))}", flush=True)
             for i, scene in enumerate(script.scenes):
                 yield f"data: {json.dumps({'stage': 'tts', 'pct': 75 + int(i / n * 20), 'msg': f'Recording voiceover {i+1}/{n}…'})}\n\n"
-                scene.audio_url = _groq_tts(scene.narration_text, voice)
+                clean = _clean_narration(scene.narration_text)
+                scene.narration_text = clean  # subtitle and TTS now read the same text
+                scene.audio_url = _groq_tts(clean, voice)
                 print(f"[TTS] scene {scene.scene_id}: {'OK' if scene.audio_url else 'FAILED'}", flush=True)
 
             audio_count = sum(1 for s in script.scenes if s.audio_url)
