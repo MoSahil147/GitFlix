@@ -25,7 +25,7 @@ export const S06HeroCommit: React.FC<{
 
   // diff lines type in one by one
   const linesVisible = Math.floor(
-    interpolate(frame, [25, 100], [0, DIFF_LINES.length], { extrapolateRight: "clamp" })
+    interpolate(frame, [25, 100], [0, DIFF_LINES.length], { extrapolateLeft: "clamp", extrapolateRight: "clamp" })
   );
 
   const statsOpacity = interpolate(frame, [75, 95], [0, 1], { extrapolateRight: "clamp" });

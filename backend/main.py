@@ -10,37 +10,44 @@ from agent.director import build_script
 
 # Groq TTS helpers
 
-# voice per tone — Orpheus voices that match each mood
+# voice per tone — PlayAI voices available on Groq playai-tts
 _TONE_VOICE = {
-    "epic":         "leo",      # deep masculine narrator
-    "documentary":  "leah",     # calm neutral narrator
-    "casual":       "jessica",  # warm friendly voice
+    "epic":         "Fritz-PlayAI",   # authoritative male narrator
+    "documentary":  "Arista-PlayAI",  # calm professional female narrator
+    "casual":       "Jade-PlayAI",    # friendly female voice
 }
 
-def _groq_tts(text: str, voice: str = "leah") -> str | None:
+def _groq_tts(text: str, voice: str = "Arista-PlayAI") -> str | None:
     """TTS for one scene narration via Groq Orpheus. Returns base64 WAV data URI or None."""
     from groq import Groq
     api_key = os.getenv("GROQ_API_KEY")
-    if not api_key or not text.strip():
+    if not api_key:
+        print("[Groq TTS] GROQ_API_KEY not set — skipping TTS")
         return None
+    if not text.strip():
+        print("[Groq TTS] empty text — skipping")
+        return None
+    print(f"[Groq TTS] generating for voice={voice}, text={text[:60]!r}…")
     try:
         client = Groq(api_key=api_key)
         response = client.audio.speech.create(
-            model="canopylabs/orpheus-v1-english",
+            model="playai-tts",
             voice=voice,
             input=text,
             response_format="wav",
         )
-        b64 = base64.b64encode(response.read()).decode()
+        audio_bytes = response.read()
+        print(f"[Groq TTS] got {len(audio_bytes)} bytes")
+        b64 = base64.b64encode(audio_bytes).decode()
         return f"data:audio/wav;base64,{b64}"
     except Exception as e:
-        print(f"[Groq TTS error] {e}")
+        print(f"[Groq TTS error] {type(e).__name__}: {e}")
         return None
 
 
 def _add_audio(script, tone: str) -> None:
     """Mutate script in-place: generate TTS per scene via Groq."""
-    voice = _TONE_VOICE.get(tone, "leah")
+    voice = _TONE_VOICE.get(tone, "Arista-PlayAI")
     for scene in script.scenes:
         scene.audio_url = _groq_tts(scene.narration_text, voice)
 
@@ -70,7 +77,7 @@ class TTSRequest(BaseModel):
 # POST /tts — generate a single TTS clip, useful for testing
 @app.post("/tts")
 async def tts(req: TTSRequest):
-    audio_url = _groq_tts(req.text, voice="leah")
+    audio_url = _groq_tts(req.text, voice="Arista-PlayAI")
     if not audio_url:
         raise HTTPException(status_code=503, detail="Groq TTS not configured or request failed")
     return {"audio_url": audio_url}

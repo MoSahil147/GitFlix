@@ -55,7 +55,7 @@ Tone guide:
     # narrate() sends context to the LLM and gets back 2-3 sentences
     # if LLM fails, it returns the fallback from SCENE_TEMPLATES
     def narrate(scene_id: str, context: str, fallback: str) -> str:
-        prompt = f"{SYSTEM_PROMPT}\n\nContext: {context}\n\nWrite 2-3 plain sentences of narration. Output ONLY the sentences — nothing else.\nDo NOT start with Scene, S0, a number, or any label. Do NOT use parentheses, brackets, asterisks, or stage directions. Do NOT mention music, visuals, or the film itself. Do NOT invent or guess any dates — only use dates explicitly given in the context above."
+        prompt = f"{SYSTEM_PROMPT}\n\nContext: {context}\n\nWrite 2-3 plain sentences of narration. Output ONLY the sentences — nothing else.\nDo NOT start with Scene, S0, a number, or any label. Do NOT use parentheses, brackets, asterisks, or stage directions. Do NOT mention music, visuals, or the film itself. Do NOT mention any specific dates, years, months, or time periods — speak in relative terms like 'early on', 'over time', 'eventually', 'at its peak'."
         try:
             return llm.invoke(prompt).content.strip()
         except Exception:
@@ -65,7 +65,7 @@ Tone guide:
     first_week = analytics["commit_series"][0]["week"] if analytics.get("commit_series") else "unknown"
 
     context_map = {
-        "S01": f"First commit by {contributors[0]['login'] if contributors else 'unknown'} on {first_week}",
+        "S01": f"First commit by {contributors[0]['login'] if contributors else 'unknown'}",
         "S02": f"Top contributors: {[c['login'] for c in contributors[:3]]}",
         "S03": f"Repo grew to {analytics['total_commits']} commits over {analytics['repo_age_days']} days",
         "S04": f"Plot twist data: {plot_twist_raw}",

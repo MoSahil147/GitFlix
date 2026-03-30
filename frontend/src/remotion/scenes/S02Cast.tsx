@@ -43,8 +43,8 @@ export const S02Cast: React.FC<{
 
           // flicker: each card has its own phase offset so they don't all pulse together
           const phase = i * 1.37;
-          const flicker = 0.55 + 0.45 * Math.abs(Math.sin(frame * 0.09 + phase));
-          const borderFlicker = 0.18 + 0.22 * Math.abs(Math.sin(frame * 0.11 + phase + 0.5));
+          const flicker = 0.55 + 0.45 * Math.abs(Math.sin(frame * 0.035 + phase));
+          const borderFlicker = 0.18 + 0.22 * Math.abs(Math.sin(frame * 0.04 + phase + 0.5));
 
           return (
             <div key={char.login} style={{

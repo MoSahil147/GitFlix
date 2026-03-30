@@ -13,13 +13,13 @@ const FPS = 30;
 
 // cinematic pacing — each scene has enough time to breathe and land
 export const SCENE_DURATIONS = {
-  S01: 12,  // origin
-  S02: 15,  // cast
-  S03: 14,  // commit share pie chart
-  S04: 13,  // twist
-  S05: 13,  // ghosts
-  S06: 16,  // hero
-  S07: 14,  // finale
+  S01: 16,  // origin
+  S02: 22,  // cast — 6 cards need time to read
+  S03: 18,  // commit share pie chart
+  S04: 17,  // twist
+  S05: 18,  // ghosts
+  S06: 22,  // hero
+  S07: 18,  // finale
 };
 
 const TOTAL_FRAMES = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0) * FPS;

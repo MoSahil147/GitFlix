@@ -7,10 +7,10 @@ import type { ScriptJSON } from "./remotion/types";
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const FPS = 30;
 
-const ACCENT  = "#8B5CF6";
-const BG      = "#050508";
-const SURFACE = "#0D0D14";
-const BORDER  = "#1A1A2A";
+const ACCENT  = "#2A7FD4";
+const BG      = "#04080F";
+const SURFACE = "#070E1A";
+const BORDER  = "#0D1E33";
 
 // cumulative start frame for each chapter
 const CHAPTER_FRAMES: Record<string, number> = {
@@ -36,7 +36,7 @@ const CHAPTERS = [
 ];
 
 const fontLink = document.createElement("link");
-fontLink.href = "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap";
+fontLink.href = "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap";
 fontLink.rel = "stylesheet";
 document.head.appendChild(fontLink);
 
@@ -73,7 +73,7 @@ export default function App() {
   const base: React.CSSProperties = {
     minHeight: "100vh", width: "100%",
     background: BG, color: "#fff",
-    fontFamily: "'DM Sans', sans-serif",
+    fontFamily: "'Inter', sans-serif",
     display: "flex", flexDirection: "column",
     alignItems: "center", justifyContent: "center",
     backgroundImage: `radial-gradient(ellipse 120% 50% at 50% -5%, ${ACCENT}22 0%, transparent 65%)`,
@@ -85,11 +85,11 @@ export default function App() {
       <div style={{ width: "100%", maxWidth: 600, padding: "0 24px", textAlign: "center" }}>
 
         {/* logo */}
-        <div style={{ marginBottom: 6, lineHeight: 1 }}>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 96, fontWeight: 900, color: "#fff", letterSpacing: -4 }}>Git</span>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 96, fontWeight: 900, fontStyle: "italic", color: ACCENT, letterSpacing: -4 }}>flix</span>
+        <div style={{ marginBottom: 8, lineHeight: 1 }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 88, fontWeight: 700, color: "#fff", letterSpacing: -3 }}>Git</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 88, fontWeight: 700, color: ACCENT, letterSpacing: -3 }}>flix</span>
         </div>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 18, color: "#3A3A55", marginBottom: 64, letterSpacing: 0.5 }}>
+        <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: "#2A4A6A", marginBottom: 56, letterSpacing: 0.3 }}>
           Every repository has a story worth telling.
         </p>
 
@@ -104,7 +104,7 @@ export default function App() {
             background: SURFACE, border: `1px solid ${BORDER}`,
             borderRadius: 14, color: "#fff", marginBottom: 14,
             boxSizing: "border-box", outline: "none",
-            fontFamily: "'DM Sans', sans-serif",
+            fontFamily: "'Inter', sans-serif",
           }}
         />
 
@@ -127,7 +127,7 @@ export default function App() {
           width: "100%", padding: "18px", fontSize: 16, fontWeight: 600,
           background: ACCENT, border: "none", borderRadius: 14,
           color: "#fff", cursor: "pointer", letterSpacing: 0.3,
-          boxShadow: `0 0 40px ${ACCENT}55`,
+          boxShadow: `0 4px 20px ${ACCENT}40`,
         }}>
           Generate Film
         </button>
@@ -140,10 +140,10 @@ export default function App() {
   if (stage === "loading") return (
     <div style={base}>
       <div style={{ textAlign: "center", width: "100%", maxWidth: 480, padding: "0 24px" }}>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 12, color: ACCENT, letterSpacing: 4, textTransform: "uppercase", marginBottom: 20 }}>
+        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: ACCENT, letterSpacing: 5, textTransform: "uppercase", marginBottom: 20 }}>
           In production
         </p>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, marginBottom: 48, color: "#fff", lineHeight: 1.2 }}>
+        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 38, fontWeight: 700, marginBottom: 48, color: "#fff", lineHeight: 1.2 }}>
           Generating your film…
         </h2>
         <div style={{ width: "100%", height: 2, background: BORDER, borderRadius: 2, marginBottom: 14 }}>
@@ -171,7 +171,7 @@ export default function App() {
         position: "sticky", top: 0, zIndex: 10,
       }}>
         <div>
-          <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontStyle: "italic", color: ACCENT, fontSize: 24, letterSpacing: -1 }}>Gitflix</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: ACCENT, fontSize: 22, letterSpacing: -0.5 }}>Gitflix</span>
           <span style={{ fontSize: 13, color: "#333355", marginLeft: 20 }}>
             {script.repo_name} · {script.total_commits} commits · {script.contributor_count} contributors
           </span>
@@ -231,8 +231,8 @@ export default function App() {
   return (
     <div style={base}>
       <div style={{ textAlign: "center", maxWidth: 440, padding: "0 24px" }}>
-        <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: 12, color: "#EF4444", letterSpacing: 3, textTransform: "uppercase", marginBottom: 14 }}>Something went wrong</p>
-        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 30, color: "#fff", marginBottom: 10 }}>The film couldn't be made.</h2>
+        <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, color: "#EF4444", letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 }}>Something went wrong</p>
+        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 28, fontWeight: 600, color: "#fff", marginBottom: 10 }}>The film couldn't be made.</h2>
         <p style={{ fontSize: 14, color: "#44445a", marginBottom: 32 }}>{error}</p>
         <button onClick={() => { setStage("input"); setError(""); }} style={{
           padding: "12px 32px", border: `1px solid ${BORDER}`, borderRadius: 10,
