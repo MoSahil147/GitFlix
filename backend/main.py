@@ -8,65 +8,41 @@ from analytics.analyzer import run_analytics
 from agent.director import build_script
 
 
-# ElevenLabs helpers
+# Groq TTS helpers
 
-def _get_eleven_client():
-    api_key = os.getenv("ELEVENLABS_API_KEY")
-    if not api_key:
-        return None
-    from elevenlabs import ElevenLabs
-    return ElevenLabs(api_key=api_key)
-
-
-def _tts(text: str) -> str | None:
-    """TTS for one scene narration. Returns base64 data URI or None."""
-    client = _get_eleven_client()
-    if not client or not text.strip():
-        return None
-    try:
-        audio_iter = client.text_to_speech.convert(
-            voice_id="pNInz6obpgDQGcFmaJgB",   # Adam — deep cinematic narrator
-            text=text,
-            model_id="eleven_turbo_v2_5",
-        )
-        b64 = base64.b64encode(b"".join(audio_iter)).decode()
-        return f"data:audio/mpeg;base64,{b64}"
-    except Exception as e:
-        print(f"[ElevenLabs TTS error] {e}")
-        return None
-
-
-# music prompt per tone
-_MUSIC_PROMPTS = {
-    "epic":         "Epic dramatic orchestral cinematic score, powerful brass and strings, building intensity",
-    "documentary":  "Calm ambient documentary background music, soft piano and gentle strings, thoughtful and measured",
-    "casual":       "Light upbeat friendly background music, modern acoustic guitar, warm and optimistic",
+# voice per tone — Orpheus voices that match each mood
+_TONE_VOICE = {
+    "epic":         "leo",      # deep masculine narrator
+    "documentary":  "leah",     # calm neutral narrator
+    "casual":       "jessica",  # warm friendly voice
 }
 
-def _generate_music(tone: str) -> str | None:
-    """Generate background music via ElevenLabs sound generation. Returns data URI or None."""
-    client = _get_eleven_client()
-    if not client:
+def _groq_tts(text: str, voice: str = "leah") -> str | None:
+    """TTS for one scene narration via Groq Orpheus. Returns base64 WAV data URI or None."""
+    from groq import Groq
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key or not text.strip():
         return None
-    prompt = _MUSIC_PROMPTS.get(tone, _MUSIC_PROMPTS["documentary"])
     try:
-        audio_iter = client.text_to_sound_effects.convert(
-            text=prompt,
-            duration_seconds=20.0,
-            prompt_influence=0.4,
+        client = Groq(api_key=api_key)
+        response = client.audio.speech.create(
+            model="canopylabs/orpheus-v1-english",
+            voice=voice,
+            input=text,
+            response_format="wav",
         )
-        b64 = base64.b64encode(b"".join(audio_iter)).decode()
-        return f"data:audio/mpeg;base64,{b64}"
+        b64 = base64.b64encode(response.read()).decode()
+        return f"data:audio/wav;base64,{b64}"
     except Exception as e:
-        print(f"[ElevenLabs music error] {e}")
+        print(f"[Groq TTS error] {e}")
         return None
 
 
 def _add_audio(script, tone: str) -> None:
-    """Mutate script in-place: generate TTS per scene + background music."""
+    """Mutate script in-place: generate TTS per scene via Groq."""
+    voice = _TONE_VOICE.get(tone, "leah")
     for scene in script.scenes:
-        scene.audio_url = _tts(scene.narration_text)
-    script.music_url = _generate_music(tone)
+        scene.audio_url = _groq_tts(scene.narration_text, voice)
 
 
 # App
@@ -94,9 +70,9 @@ class TTSRequest(BaseModel):
 # POST /tts — generate a single TTS clip, useful for testing
 @app.post("/tts")
 async def tts(req: TTSRequest):
-    audio_url = _tts(req.text)
+    audio_url = _groq_tts(req.text, voice="leah")
     if not audio_url:
-        raise HTTPException(status_code=503, detail="ElevenLabs not configured or request failed")
+        raise HTTPException(status_code=503, detail="Groq TTS not configured or request failed")
     return {"audio_url": audio_url}
 
 
@@ -116,6 +92,7 @@ async def generate(req: GenerateRequest):
 # GET /generate/stream — streams SSE progress to the frontend
 @app.get("/generate/stream")
 async def generate_stream(repo_url: str, tone: str = "documentary"):
+    repo_url = repo_url.strip().lower()
 
     async def event_stream():
         try:
@@ -128,12 +105,8 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
             script = build_script(analytics, tone)
 
-            # ElevenLabs audio disabled (free tier blocked on cloud IPs)
-            # yield f"data: {json.dumps({'stage': 'tts',   'pct': 75, 'msg': 'Recording voiceovers…'})}\n\n"
-            # for scene in script.scenes:
-            #     scene.audio_url = _tts(scene.narration_text)
-            # yield f"data: {json.dumps({'stage': 'music', 'pct': 90, 'msg': 'Composing background music…'})}\n\n"
-            # script.music_url = _generate_music(tone)
+            yield f"data: {json.dumps({'stage': 'tts', 'pct': 75, 'msg': 'Recording voiceovers…'})}\n\n"
+            _add_audio(script, tone)
 
             yield f"data: {json.dumps({'stage': 'done',      'pct': 100, 'data': script.model_dump()})}\n\n"
 

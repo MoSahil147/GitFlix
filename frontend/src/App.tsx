@@ -52,9 +52,10 @@ export default function App() {
   const playerRef               = useRef<PlayerRef>(null);
 
   const handleGenerate = () => {
-    if (!repoUrl.includes("github.com")) { setError("Please enter a valid GitHub URL"); return; }
+    const normalizedUrl = repoUrl.trim().toLowerCase();
+    if (!normalizedUrl.includes("github.com")) { setError("Please enter a valid GitHub URL"); return; }
     setError(""); setStage("loading"); setProgress({ pct: 0, msg: "Connecting..." });
-    const url = `${API}/generate/stream?repo_url=${encodeURIComponent(repoUrl)}&tone=${tone}`;
+    const url = `${API}/generate/stream?repo_url=${encodeURIComponent(normalizedUrl)}&tone=${tone}`;
     const es = new EventSource(url);
     es.onmessage = (e) => {
       const data = JSON.parse(e.data);
