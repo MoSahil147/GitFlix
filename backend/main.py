@@ -111,16 +111,24 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
 
             voice = _TONE_VOICE.get(tone, "leah")
             n = len(script.scenes)
+            print(f"[TTS] starting — voice={voice}, key_set={bool(os.getenv('GROQ_API_KEY'))}", flush=True)
             for i, scene in enumerate(script.scenes):
                 yield f"data: {json.dumps({'stage': 'tts', 'pct': 75 + int(i / n * 20), 'msg': f'Recording voiceover {i+1}/{n}…'})}\n\n"
                 scene.audio_url = _groq_tts(scene.narration_text, voice)
+                print(f"[TTS] scene {scene.scene_id}: {'OK' if scene.audio_url else 'FAILED'}", flush=True)
 
+            audio_count = sum(1 for s in script.scenes if s.audio_url)
+            print(f"[TTS] done — {audio_count}/{n} scenes have audio", flush=True)
             yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': script.model_dump()})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'stage': 'error', 'msg': str(e)})}\n\n"
 
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+    )
 
 
 # GET /health

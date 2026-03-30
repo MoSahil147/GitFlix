@@ -59,7 +59,11 @@ export default function App() {
     const es = new EventSource(url);
     es.onmessage = (e) => {
       const data = JSON.parse(e.data);
-      if (data.stage === "done")       { setScript(data.data); setStage("preview"); es.close(); }
+      if (data.stage === "done") {
+        const voiceCount = (data.data.scenes as {audio_url: string|null}[]).filter(s => s.audio_url).length;
+        console.log(`[GitFlix] voiceovers received: ${voiceCount}/7`);
+        setScript(data.data); setStage("preview"); es.close();
+      }
       else if (data.stage === "error") { setError(data.msg);   setStage("error");   es.close(); }
       else                             { setProgress({ pct: data.pct, msg: data.msg }); }
     };
@@ -175,6 +179,11 @@ export default function App() {
           <span style={{ fontSize: 13, color: "#333355", marginLeft: 20 }}>
             {script.repo_name} · {script.total_commits} commits · {script.contributor_count} contributors
           </span>
+          {(() => { const n = script.scenes.filter(s => s.audio_url).length; return (
+            <span style={{ fontSize: 11, color: n > 0 ? "#5DCAA5" : "#e05a5a", marginLeft: 14, letterSpacing: 1 }}>
+              🎙 {n}/7 voiceovers
+            </span>
+          ); })()}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => { setStage("input"); setScript(null); }} style={{
