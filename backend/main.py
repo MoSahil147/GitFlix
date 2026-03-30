@@ -12,14 +12,14 @@ from agent.director import build_script
 
 # Groq TTS helpers
 
-# voice per tone — Orpheus voices (canopylabs/orpheus-v1-english on Groq)
+# voice per tone — valid Orpheus voices for canopylabs/orpheus-v1-english
 _TONE_VOICE = {
-    "epic":         "leo",      # deep masculine narrator
-    "documentary":  "leah",     # calm neutral narrator
-    "casual":       "jessica",  # warm friendly voice
+    "epic":         "daniel",   # deep authoritative male
+    "documentary":  "diana",    # calm neutral female
+    "casual":       "autumn",   # warm friendly female
 }
 
-def _groq_tts(text: str, voice: str = "leah") -> str | None:
+def _groq_tts(text: str, voice: str = "diana") -> str | None:
     """TTS for one scene narration via Groq Orpheus. Returns base64 WAV data URI or None."""
     from groq import Groq
     api_key = os.getenv("GROQ_API_KEY")

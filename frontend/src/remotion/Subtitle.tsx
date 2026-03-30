@@ -15,9 +15,11 @@ export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {
 
   if (!text) return null;
 
-  // Strip raw ISO date formats (ugly in subtitles) — keep natural language dates/years
+  // Strip all date/year references from subtitles
   const stripped = text
-    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "")   // 2024-01-15 → removed
+    .replace(/\b\d{4}-\d{2}-\d{2}\b/g, "")                           // 2024-01-15
+    .replace(/\b(of|in|since|from|by|during|as of)\s+(19|20)\d{2}\b/gi, "") // "in 2025", "of 2024"
+    .replace(/\b(19|20)\d{2}\b/g, "")                                // bare year: 2025, 2023
     .replace(/\s{2,}/g, " ")
     .trim();
 
