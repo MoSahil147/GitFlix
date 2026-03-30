@@ -1,5 +1,5 @@
 import React from "react";
-import { Series, Html5Audio, Sequence, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
+import { Series, Html5Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import type { ScriptJSON } from "./types";
 import { S01Origin } from "./scenes/S01Origin";
 import { S02Cast } from "./scenes/S02Cast";
@@ -33,9 +33,9 @@ const MUSIC: Record<string, string> = {
 const getNarration = (script: ScriptJSON, id: string) =>
   script.scenes.find((s) => s.scene_id === id)?.narration_text ?? "";
 
-// returns the TTS audio data URI for a scene, or null if not available
-const getAudio = (script: ScriptJSON, id: string) =>
-  script.scenes.find((s) => s.scene_id === id)?.audio_url ?? null;
+// // TTS disabled — returns audio URL for a scene (kept for future use)
+// const getAudio = (script: ScriptJSON, id: string) =>
+//   script.scenes.find((s) => s.scene_id === id)?.audio_url ?? null;
 
 // Fades each scene in from black and out to black — smooth cinematic transition
 const Fade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -62,43 +62,43 @@ export const GitflixVideo: React.FC<{ script: ScriptJSON }> = ({ script }) => (
     <Series>
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S01 * FPS}>
         <Fade><S01Origin repoName={script.repo_name} firstContributor={script.characters[0]?.login ?? "unknown"} narration={getNarration(script, "S01")} /></Fade>
-        {getAudio(script, "S01") && <Sequence from={15}><Html5Audio src={getAudio(script, "S01")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S01") && <Sequence from={15}><Html5Audio src={getAudio(script, "S01")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
 
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S02 * FPS}>
         <Fade><S02Cast characters={script.characters} narration={getNarration(script, "S02")} /></Fade>
-        {getAudio(script, "S02") && <Sequence from={15}><Html5Audio src={getAudio(script, "S02")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S02") && <Sequence from={15}><Html5Audio src={getAudio(script, "S02")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
 
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S03 * FPS}>
         <Fade><S03Rise characters={script.characters} narration={getNarration(script, "S03")} /></Fade>
-        {getAudio(script, "S03") && <Sequence from={15}><Html5Audio src={getAudio(script, "S03")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S03") && <Sequence from={15}><Html5Audio src={getAudio(script, "S03")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
 
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S04 * FPS}>
         <Fade><S04PlotTwist plotTwist={script.plot_twist} commitSeries={script.commit_series} narration={getNarration(script, "S04")} /></Fade>
-        {getAudio(script, "S04") && <Sequence from={15}><Html5Audio src={getAudio(script, "S04")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S04") && <Sequence from={15}><Html5Audio src={getAudio(script, "S04")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
 
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S05 * FPS}>
         <Fade><S05GhostTowns ghostFiles={script.ghost_files} narration={getNarration(script, "S05")} /></Fade>
-        {getAudio(script, "S05") && <Sequence from={15}><Html5Audio src={getAudio(script, "S05")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S05") && <Sequence from={15}><Html5Audio src={getAudio(script, "S05")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
 
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S06 * FPS}>
         <Fade><S06HeroCommit heroCommit={script.hero_commit} narration={getNarration(script, "S06")} /></Fade>
-        {getAudio(script, "S06") && <Sequence from={15}><Html5Audio src={getAudio(script, "S06")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S06") && <Sequence from={15}><Html5Audio src={getAudio(script, "S06")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
 
       <Series.Sequence durationInFrames={SCENE_DURATIONS.S07 * FPS}>
         <Fade><S07FinalState script={script} narration={getNarration(script, "S07")} /></Fade>
-        {getAudio(script, "S07") && <Sequence from={15}><Html5Audio src={getAudio(script, "S07")!} volume={0.9} /></Sequence>}
+        {/* {getAudio(script, "S07") && <Sequence from={15}><Html5Audio src={getAudio(script, "S07")!} volume={0.9} /></Sequence>} */}
 
       </Series.Sequence>
     </Series>

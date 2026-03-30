@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-import json, os, base64
+import json, os
 from dotenv import load_dotenv
 load_dotenv()
 from ingestion.github_client import fetch_repo_data
@@ -10,59 +10,44 @@ from analytics.analyzer import run_analytics
 from agent.director import build_script
 
 
-# Groq TTS helpers
-
-# voice per tone — valid Orpheus voices for canopylabs/orpheus-v1-english
-_TONE_VOICE = {
-    "epic":         "daniel",   # deep authoritative male
-    "documentary":  "diana",    # calm neutral female
-    "casual":       "autumn",   # warm friendly female
-}
-
-def _clean_narration(text: str) -> str:
-    """Make narration human-speakable: strip preamble, technical strings, and limit length."""
-    import re
-    # Remove LLM preamble like "Here's a cinematic narration:" or "Scene 1:"
-    text = re.sub(r"^(here'?s?\s+[\w\s]*:|scene\s+\w+:|narration:|note:)[^\n]*\n?", "", text, flags=re.IGNORECASE)
-    # Replace owner/repo paths with just the repo part, humanised
-    text = re.sub(r'\b[\w.-]+/([\w.-]+)\b', lambda m: m.group(1).replace('-', ' ').replace('_', ' '), text)
-    # Replace remaining hyphens/underscores in technical identifiers with spaces
-    text = re.sub(r'\b([a-z0-9]{2,})[-_]([a-z0-9])', lambda m: m.group(1) + ' ' + m.group(2), text, flags=re.IGNORECASE)
-    # Clean up extra whitespace
-    text = re.sub(r'\s{2,}', ' ', text).strip()
-    # Keep only 1 sentence and cap at 120 chars to stay within Groq's 3600 TPD limit
-    sentences = re.findall(r"[^.!?]+[.!?]+", text)
-    result = sentences[0].strip() if sentences else text.strip()
-    return result[:120].strip() or text[:120].strip()
-
-
-def _groq_tts(text: str, voice: str = "diana") -> str | None:
-    """TTS for one scene narration via Groq Orpheus. Returns base64 WAV data URI or None."""
-    from groq import Groq
-    api_key = os.getenv("GROQ_API_KEY")
-    if not api_key:
-        print("[Groq TTS] GROQ_API_KEY not set — skipping TTS")
-        return None
-    clean = _clean_narration(text)
-    if not clean:
-        print("[Groq TTS] empty text — skipping")
-        return None
-    print(f"[Groq TTS] generating for voice={voice}, text={clean[:60]!r}…")
-    try:
-        client = Groq(api_key=api_key)
-        response = client.audio.speech.create(
-            model="canopylabs/orpheus-v1-english",
-            voice=voice,
-            input=clean,
-            response_format="wav",
-        )
-        audio_bytes = response.read()
-        print(f"[Groq TTS] got {len(audio_bytes)} bytes")
-        b64 = base64.b64encode(audio_bytes).decode()
-        return f"data:audio/wav;base64,{b64}"
-    except Exception as e:
-        print(f"[Groq TTS error] {type(e).__name__}: {e}")
-        return None
+# # Groq TTS helpers — disabled (voiceovers removed, subtitles only)
+# _TONE_VOICE = {
+#     "epic":         "daniel",
+#     "documentary":  "diana",
+#     "casual":       "autumn",
+# }
+#
+# def _clean_narration(text: str) -> str:
+#     import re
+#     text = re.sub(r"^(here'?s?\s+[\w\s]*:|scene\s+\w+:|narration:|note:)[^\n]*\n?", "", text, flags=re.IGNORECASE)
+#     text = re.sub(r'\b[\w.-]+/([\w.-]+)\b', lambda m: m.group(1).replace('-', ' ').replace('_', ' '), text)
+#     text = re.sub(r'\b([a-z0-9]{2,})[-_]([a-z0-9])', lambda m: m.group(1) + ' ' + m.group(2), text, flags=re.IGNORECASE)
+#     text = re.sub(r'\s{2,}', ' ', text).strip()
+#     sentences = re.findall(r"[^.!?]+[.!?]+", text)
+#     result = sentences[0].strip() if sentences else text.strip()
+#     return result[:120].strip() or text[:120].strip()
+#
+# def _groq_tts(text: str, voice: str = "diana") -> str | None:
+#     import base64
+#     from groq import Groq
+#     api_key = os.getenv("GROQ_API_KEY")
+#     if not api_key:
+#         return None
+#     clean = _clean_narration(text)
+#     if not clean:
+#         return None
+#     try:
+#         client = Groq(api_key=api_key)
+#         response = client.audio.speech.create(
+#             model="canopylabs/orpheus-v1-english",
+#             voice=voice, input=clean, response_format="wav",
+#         )
+#         audio_bytes = response.read()
+#         b64 = base64.b64encode(audio_bytes).decode()
+#         return f"data:audio/wav;base64,{b64}"
+#     except Exception as e:
+#         print(f"[Groq TTS error] {type(e).__name__}: {e}")
+#         return None
 
 
 
@@ -89,13 +74,13 @@ class TTSRequest(BaseModel):
     voice_id: str = "pNInz6obpgDQGcFmaJgB"
 
 
-# POST /tts — generate a single TTS clip, useful for testing
-@app.post("/tts")
-async def tts(req: TTSRequest):
-    audio_url = _groq_tts(req.text, voice="leah")
-    if not audio_url:
-        raise HTTPException(status_code=503, detail="Groq TTS not configured or request failed")
-    return {"audio_url": audio_url}
+# # POST /tts — disabled (voiceovers removed)
+# @app.post("/tts")
+# async def tts(req: TTSRequest):
+#     audio_url = _groq_tts(req.text, voice="leah")
+#     if not audio_url:
+#         raise HTTPException(status_code=503, detail="Groq TTS not configured or request failed")
+#     return {"audio_url": audio_url}
 
 
 # POST /generate — full pipeline, single response
@@ -127,18 +112,14 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
             script = build_script(analytics, tone)
 
-            voice = _TONE_VOICE.get(tone, "leah")
-            n = len(script.scenes)
-            print(f"[TTS] starting — voice={voice}, key_set={bool(os.getenv('GROQ_API_KEY'))}", flush=True)
-            for i, scene in enumerate(script.scenes):
-                yield f"data: {json.dumps({'stage': 'tts', 'pct': 75 + int(i / n * 20), 'msg': f'Recording voiceover {i+1}/{n}…'})}\n\n"
-                clean = _clean_narration(scene.narration_text)
-                scene.narration_text = clean  # subtitle and TTS now read the same text
-                scene.audio_url = _groq_tts(clean, voice)
-                print(f"[TTS] scene {scene.scene_id}: {'OK' if scene.audio_url else 'FAILED'}", flush=True)
+            # # TTS disabled — subtitles only
+            # voice = _TONE_VOICE.get(tone, "diana")
+            # for i, scene in enumerate(script.scenes):
+            #     yield f"data: {json.dumps({'stage': 'tts', 'pct': 75 + int(i / len(script.scenes) * 20), 'msg': f'Recording voiceover {i+1}/{len(script.scenes)}…'})}\n\n"
+            #     clean = _clean_narration(scene.narration_text)
+            #     scene.narration_text = clean
+            #     scene.audio_url = _groq_tts(clean, voice)
 
-            audio_count = sum(1 for s in script.scenes if s.audio_url)
-            print(f"[TTS] done — {audio_count}/{n} scenes have audio", flush=True)
             yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': script.model_dump()})}\n\n"
 
         except Exception as e:

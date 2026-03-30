@@ -179,11 +179,7 @@ export default function App() {
           <span style={{ fontSize: 13, color: "#333355", marginLeft: 20 }}>
             {script.repo_name} · {script.total_commits} commits · {script.contributor_count} contributors
           </span>
-          {(() => { const n = script.scenes.filter(s => s.audio_url).length; return (
-            <span style={{ fontSize: 11, color: n > 0 ? "#5DCAA5" : "#e05a5a", marginLeft: 14, letterSpacing: 1 }}>
-              🎙 {n}/7 voiceovers
-            </span>
-          ); })()}
+          {/* voiceover badge disabled */}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={() => { setStage("input"); setScript(null); }} style={{
