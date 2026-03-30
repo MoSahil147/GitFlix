@@ -47,11 +47,6 @@ def _groq_tts(text: str, voice: str = "leah") -> str | None:
         return None
 
 
-def _add_audio(script, tone: str) -> None:
-    """Mutate script in-place: generate TTS per scene via Groq."""
-    voice = _TONE_VOICE.get(tone, "leah")
-    for scene in script.scenes:
-        scene.audio_url = _groq_tts(scene.narration_text, voice)
 
 
 # App
@@ -114,10 +109,13 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
             script = build_script(analytics, tone)
 
-            yield f"data: {json.dumps({'stage': 'tts', 'pct': 75, 'msg': 'Recording voiceovers…'})}\n\n"
-            _add_audio(script, tone)
+            voice = _TONE_VOICE.get(tone, "leah")
+            n = len(script.scenes)
+            for i, scene in enumerate(script.scenes):
+                yield f"data: {json.dumps({'stage': 'tts', 'pct': 75 + int(i / n * 20), 'msg': f'Recording voiceover {i+1}/{n}…'})}\n\n"
+                scene.audio_url = _groq_tts(scene.narration_text, voice)
 
-            yield f"data: {json.dumps({'stage': 'done',      'pct': 100, 'data': script.model_dump()})}\n\n"
+            yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': script.model_dump()})}\n\n"
 
         except Exception as e:
             yield f"data: {json.dumps({'stage': 'error', 'msg': str(e)})}\n\n"

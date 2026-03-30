@@ -59,7 +59,7 @@ export const S07FinalState: React.FC<{
         fontSize: 24, fontWeight: 900, fontStyle: "italic",
         color: "#8B5CF6", letterSpacing: -1,
       }}>
-        Gitflix
+        GitFlix
       </div>
 
       <Subtitle text={narration} startFrame={90} />

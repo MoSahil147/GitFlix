@@ -87,7 +87,7 @@ export default function App() {
         {/* logo */}
         <div style={{ marginBottom: 8, lineHeight: 1 }}>
           <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 88, fontWeight: 700, color: "#fff", letterSpacing: -3 }}>Git</span>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 88, fontWeight: 700, color: ACCENT, letterSpacing: -3 }}>flix</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 88, fontWeight: 700, color: ACCENT, letterSpacing: -3 }}>Flix</span>
         </div>
         <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 15, color: "#2A4A6A", marginBottom: 56, letterSpacing: 0.3 }}>
           Every repository has a story worth telling.
@@ -96,7 +96,7 @@ export default function App() {
         {/* input */}
         <input
           value={repoUrl}
-          onChange={e => setRepoUrl(e.target.value)}
+          onChange={e => setRepoUrl(e.target.value.toLowerCase())}
           onKeyDown={e => e.key === "Enter" && handleGenerate()}
           placeholder="https://github.com/org/repo"
           style={{
@@ -171,7 +171,7 @@ export default function App() {
         position: "sticky", top: 0, zIndex: 10,
       }}>
         <div>
-          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: ACCENT, fontSize: 22, letterSpacing: -0.5 }}>Gitflix</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: ACCENT, fontSize: 22, letterSpacing: -0.5 }}>GitFlix</span>
           <span style={{ fontSize: 13, color: "#333355", marginLeft: 20 }}>
             {script.repo_name} · {script.total_commits} commits · {script.contributor_count} contributors
           </span>
