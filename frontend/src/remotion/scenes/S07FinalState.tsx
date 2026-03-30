@@ -34,7 +34,7 @@ export const S07FinalState: React.FC<{
         {script.repo_name}
       </div>
 
-      <div style={{ opacity: taglineOpacity, fontSize: 18, color: "#28284a", fontStyle: "italic", marginBottom: 68 }}>
+      <div style={{ opacity: taglineOpacity, fontSize: 18, color: "#28284a", fontStyle: "italic", marginTop: 24, marginBottom: 68 }}>
         Every repository has a story.
       </div>
 
