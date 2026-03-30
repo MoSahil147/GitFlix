@@ -30,9 +30,10 @@ def _clean_narration(text: str) -> str:
     text = re.sub(r'\b([a-z0-9]{2,})[-_]([a-z0-9])', lambda m: m.group(1) + ' ' + m.group(2), text, flags=re.IGNORECASE)
     # Clean up extra whitespace
     text = re.sub(r'\s{2,}', ' ', text).strip()
-    # Keep only first 2 sentences to stay within token budget
+    # Keep only 1 sentence and cap at 120 chars to stay within Groq's 3600 TPD limit
     sentences = re.findall(r"[^.!?]+[.!?]+", text)
-    return " ".join(sentences[:2]).strip() or text[:300].strip()
+    result = sentences[0].strip() if sentences else text.strip()
+    return result[:120].strip() or text[:120].strip()
 
 
 def _groq_tts(text: str, voice: str = "diana") -> str | None:

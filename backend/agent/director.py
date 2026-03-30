@@ -59,7 +59,7 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
     def narrate(scene_id: str, context: str, fallback: str) -> str:
         prompt = (
             f"{SYSTEM_PROMPT}\n\nContext: {context}\n\n"
-            "Write exactly 2 sentences of narration to be spoken aloud. Output ONLY those 2 sentences.\n"
+            "Write exactly 1 sentence of narration to be spoken aloud. Keep it under 20 words. Output ONLY that sentence.\n"
             "Rules:\n"
             "- No preamble, labels, or intro ('Here is...', 'Narration:', 'Scene 1:' etc.).\n"
             "- No technical identifiers, repo paths (owner/repo), file paths, or code-style names.\n"
