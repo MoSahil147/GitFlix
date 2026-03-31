@@ -4,8 +4,15 @@
 
 Live at [gitflix.netlify.app](https://gitflix.netlify.app)
 
-GitFlix turns any public GitHub repository into a cinematic documentary, complete with animated scenes, commit analytics, a generated narrative, and a full soundtrack. Paste a URL, pick a tone, and watch your codebase come alive on screen.
+GitFlix turns any public GitHub repository into a cinematic documentary, complete with animated scenes, commit analytics, a generated narrative and a full soundtrack. Paste a URL, pick a tone and watch your codebase come alive on screen.
 
+## Open for contributions
+
+This project is open to contribute and improve. You can suggest ideas report bugs or request features.
+
+- Open an issue for bugs or ideas  
+- Submit a pull request with improvements  
+- Share feedback on features or UX
 ---
 
 ## What it does
