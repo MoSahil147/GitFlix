@@ -29,7 +29,7 @@ GitFlix analyses a repository's commit history and produces a seven-scene short 
 | S06 | The Hero Moment | The one commit that changed the most lines |
 | S07 | The Finale | Final statistics and a closing card |
 
-Each scene has fade transitions, per-scene subtitles, and a background score that fades out cleanly at the end.
+Each scene has fade transitions, per-scene subtitles and a background score that fades out cleanly at the end.
 
 ---
 
@@ -68,9 +68,9 @@ cd gitflix
 
 ```bash
 cd backend
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+uv venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+uv pip install -r requirements.txt
 ```
 
 Create a `.env` file in the `backend/` directory:
@@ -113,7 +113,7 @@ Open `http://localhost:5173` in your browser.
 
 ## Usage
 
-1. Enter a public GitHub repository URL, e.g. `https://github.com/facebook/react`
+1. Enter a public GitHub repository URL, e.g. `https://github.com/MoSahil147/GitFlix`
 2. Select a tone — **Epic**, **Documentary**, or **Casual**
 3. Click **Generate Film**
 4. Watch the progress bar as the backend fetches data, runs analytics, and writes the script
