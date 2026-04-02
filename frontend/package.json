@@ -12,7 +12,7 @@
   "dependencies": {
     "@remotion/cli": "^4.0.441",
     "@remotion/player": "^4.0.441",
-    "axios": "^1.14.0",
+    "axios": "1.14.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "remotion": "^4.0.441"
