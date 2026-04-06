@@ -303,3 +303,100 @@ uv run uvicorn main:app --reload --port 8000
 - durationInFrames = seconds x fps (we use 30fps)
 - Total film = 85 seconds = 2550 frames
 - getNarration() helper finds the narration text for each scene by id
+
+
+
+package.json
+heart of the project 
+Your dependencies (React, Remotion, Axios)
+Dev tools (Vite, TypeScript, ESLint)
+Scripts: npm run dev, npm run build, etc.
+
+npm — Node Package Manager. Like an app store for JS libraries. npm install axios downloads axios into node_modules/.
+
+Vite — Your dev server + build tool. When you code, Vite instantly shows changes in the browser. When you deploy, it bundles everything into optimized files.
+
+TypeScript and React are separate things. React is a library you use, TypeScript is the language you write it in. You could use React with plain JS too.
+
+Axios — Makes HTTP requests (calling your backend API). Cleaner than the built-in fetch.
+
+Remotion — Lets you create videos programmatically with React components. This is the core of GitFlix.
+
+ESLint — Scans your code for mistakes and bad patterns without running it. Like spell-check, but for code quality.
+
+Command	What it does
+npm run dev	Starts Vite dev server at localhost:5173. Hot-reloads on save.
+npm run build	Compiles TS → JS, bundles everything into dist/ folder for production
+npm run preview	Serves the dist/ folder locally to test the production build
+npm run lint	Runs ESLint to check for code issues
+
+DOM — Document Object Model. The browser's representation of your HTML page as a tree of objects. document.getElementById(...) is DOM access. React sits on top of the DOM and manages it for you.
+
+react-jsx — JSX is the HTML-looking syntax you write inside React components:
+
+
+return <div className="card">Hello</div>
+That's not real HTML — it's JSX. The react-jsx setting tells TypeScript how to compile it into actual JS function calls (React.createElement(...)).
+
+"name": "frontend"
+The name of this npm package/project. Mostly irrelevant unless you publish it.
+
+
+"private": true
+Prevents accidentally publishing this to the public npm registry.
+
+
+"version": "0.0.0"
+Your app's version. Doesn't matter for a private app, just a placeholder.
+
+
+"type": "module"
+Tells Node.js to treat .js files as ES Modules (import/export) instead of the older CommonJS (require()).
+
+Scripts
+
+"dev":     "vite"              → starts dev server
+"build":   "tsc -b && vite build"  → type-check first, then bundle for production
+"lint":    "eslint ."          → check all files for code issues
+"preview": "vite preview"      → serve the production build locally
+tsc -b = TypeScript compiler in build mode. The && means "only run vite build if tsc succeeds (no type errors)."
+
+Dependencies
+These are bundled into your final app — shipped to the user's browser.
+
+
+"react": "^19.2.4"         → core React library
+"react-dom": "^19.2.4"     → React's bridge to the browser DOM
+"axios": "1.14.0"          → HTTP requests to your backend
+"remotion": "^4.0.441"     → core Remotion video engine
+"@remotion/player"         → the <Player> component to play videos in browser
+"@remotion/cli"            → Remotion's command-line tools
+^19.2.4 means "19.2.4 or higher, but not 20.x" (minor/patch updates ok, major version locked)
+1.14.0 (no ^) means exactly this version, nothing newer — you pinned axios
+
+DevDependencies
+Only used during development/build — NOT shipped to the browser.
+
+
+"typescript": "~5.9.3"           → the TS compiler itself
+"vite": "^8.0.1"                 → dev server + bundler
+"@vitejs/plugin-react"           → lets Vite understand React/JSX
+
+"@types/react"                   → TypeScript type definitions for React
+"@types/react-dom"               → TypeScript type definitions for react-dom
+"@types/node"                    → TypeScript type definitions for Node.js APIs
+
+"eslint": "^9.39.4"              → the linter engine
+"@eslint/js"                     → ESLint's built-in JS rules
+"typescript-eslint"              → ESLint rules specific to TypeScript
+"eslint-plugin-react-hooks"      → warns if you use React hooks incorrectly
+"eslint-plugin-react-refresh"    → Vite hot-reload compatibility checks
+
+"globals": "^17.4.0"             → tells ESLint what global variables exist (window, document, etc.)
+@types/* packages exist because many libraries were written in plain JS. These packages add TypeScript type information so TS knows the shape of their APIs.
+
+The ^ vs ~ difference
+Symbol	Meaning
+^1.2.3	Allow 1.x.x updates (minor + patch)
+~1.2.3	Allow 1.2.x updates (patch only)
+1.2.3	Exact version, nothing else
