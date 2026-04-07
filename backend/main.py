@@ -10,6 +10,7 @@ load_dotenv()
 from ingestion.github_client import fetch_repo_data
 from analytics.analyzer import run_analytics
 from agent.director import build_script
+from schemas import RepoData
 
 log = logging.getLogger("gitflix")
 
@@ -98,34 +99,41 @@ async def generate_stream(repo_url: str, tone: Literal["epic", "documentary", "c
                 yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': cached.model_dump()})}\n\n"
                 return
 
-            # Helper to yield progress from within the ingestion thread
+            # Capture the current loop to safely schedule messages from the worker thread
+            loop = asyncio.get_running_loop()
             queue = asyncio.Queue()
-            def progress_cb(pct, msg):
-                asyncio.run_coroutine_threadsafe(queue.put((pct, msg)), asyncio.get_event_loop())
 
-            # Start ingestion in a thread
-            ingestion_task = asyncio.to_thread(fetch_repo_data, repo_url, on_progress=progress_cb)
-            
-            # Use a wrapper to wait for the task and signal completion
+            def progress_cb(pct, msg):
+                # Thread-safe way to put items into the main thread's queue
+                loop.call_soon_threadsafe(queue.put_nowait, (pct, msg))
+
+            # Run ingestion in a background thread
             async def run_ingestion():
-                result = await ingestion_task
-                await queue.put(result)
+                try:
+                    result = await asyncio.to_thread(fetch_repo_data, repo_url, on_progress=progress_cb)
+                    await queue.put(result)
+                except Exception as e:
+                    await queue.put(e)
 
             asyncio.create_task(run_ingestion())
 
-            # Yield messages from the queue until we get the RepoData result
+            # Listen for progress updates or the final result
+            repo_data = None
             while True:
                 item = await queue.get()
                 if isinstance(item, RepoData):
                     repo_data = item
                     break
+                elif isinstance(item, Exception):
+                    raise item
+                
                 pct, msg = item
                 yield f"data: {json.dumps({'stage': 'ingestion', 'pct': pct, 'msg': msg})}\n\n"
 
             yield f"data: {json.dumps({'stage': 'analytics', 'pct': 40, 'msg': 'Analysing commit history…'})}\n\n"
             analytics = await asyncio.to_thread(run_analytics, repo_data)
 
-            yield f"data: {json.dumps({'stage': 'agent',     'pct': 60, 'msg': 'Writing the script…'})}\n\n"
+            yield f"data: {json.dumps({'stage': 'agent',     'pct': 70, 'msg': 'Writing the cinematic script…'})}\n\n"
             script = await asyncio.to_thread(build_script, analytics, tone)
 
             _cache_set(cache_key, script)
@@ -135,12 +143,16 @@ async def generate_stream(repo_url: str, tone: Literal["epic", "documentary", "c
             yield f"data: {json.dumps({'stage': 'error', 'msg': str(e)})}\n\n"
         except Exception as e:
             log.error("[/generate/stream] %s: %s", type(e).__name__, e)
-            yield f"data: {json.dumps({'stage': 'error', 'msg': 'Failed to generate script.'})}\n\n"
+            yield f"data: {json.dumps({'stage': 'error', 'msg': 'Failed to generate script. Please check your GitHub token and URL.'})}\n\n"
 
     return StreamingResponse(
         event_stream(),
         media_type="text/event-stream",
-        headers={"X-Accel-Buffering": "no", "Cache-Control": "no-cache"},
+        headers={
+            "X-Accel-Buffering": "no", 
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive"
+        },
     )
 
 
