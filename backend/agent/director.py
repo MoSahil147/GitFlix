@@ -1,7 +1,7 @@
-from langchain_groq import ChatGroq
 from typing import Dict, Any
-import json, os
+import json
 from schemas import ScriptJSON, Scene, Character, Era, PlotTwist, HeroCommit
+from agent.llm_balancer import LLMLoadBalancer
 from agent.tools import (
     analyze_contributors, detect_plot_twist,
     find_hero_commit, identify_ghost_files, get_commit_series
@@ -22,12 +22,8 @@ SCENE_TEMPLATES = {
 # narrate funnction + the tool calling
 def build_script(analytics: Dict[str, Any], tone: str) -> ScriptJSON:
 
-    # set up the Groq LLM — this is what writes the narration
-    llm = ChatGroq(
-        model="llama-3.1-8b-instant",
-        temperature=0.7,
-        api_key=os.getenv("GROQ_API_KEY")
-    )
+    # set up the LLM balancer — round-robins across llama models with fallback
+    llm = LLMLoadBalancer(temperature=0.7)
 
     # convert analytics dict to a JSON string so tools can read it
     analytics_str = json.dumps(analytics)
