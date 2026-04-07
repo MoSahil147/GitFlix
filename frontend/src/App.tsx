@@ -72,7 +72,7 @@ export default function App() {
       else                             { setProgress({ pct: data.pct, msg: data.msg }); }
     };
     es.onerror = () => {
-      setError("Connection lost. You may have hit the rate limit (5 requests/min) — try again shortly, or check that the backend is running.");
+      setError("Connection lost. Please check if the backend is running or try again later.");
       setStage("error");
       es.close();
     };
