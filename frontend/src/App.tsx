@@ -4,7 +4,7 @@ import type { PlayerRef } from "@remotion/player";
 import { GitflixVideo, SCENE_DURATIONS } from "./remotion/GitflixVideo";
 import type { ScriptJSON } from "./remotion/types";
 
-const API = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const API = (import.meta.env.VITE_API_URL ?? "").trim() || (import.meta.env.DEV ? "/api" : "");
 const FPS = 30;
 
 const ACCENT  = "#2A7FD4";
@@ -42,6 +42,12 @@ document.head.appendChild(fontLink);
 
 type Stage = "input" | "loading" | "preview" | "error";
 
+type HealthResponse = {
+  status: "ok" | "degraded";
+  missing_required?: string[];
+  warnings?: string[];
+};
+
 export default function App() {
   const [stage, setStage]       = useState<Stage>("input");
   const [repoUrl, setRepoUrl]   = useState("");
@@ -51,10 +57,38 @@ export default function App() {
   const [error, setError]       = useState("");
   const playerRef               = useRef<PlayerRef>(null);
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const normalizedUrl = repoUrl.trim().toLowerCase();
     if (!normalizedUrl.includes("github.com")) { setError("Please enter a valid GitHub URL"); return; }
+    if (!API) {
+      setError("Frontend is missing VITE_API_URL. Set it in Netlify to your Render backend URL.");
+      setStage("error");
+      return;
+    }
     setError(""); setStage("loading"); setProgress({ pct: 0, msg: "Connecting..." });
+
+    try {
+      const healthRes = await fetch(`${API}/health`);
+      if (!healthRes.ok) {
+        throw new Error(`Backend health check failed with status ${healthRes.status}.`);
+      }
+
+      const health = await healthRes.json() as HealthResponse;
+      if (health.status !== "ok") {
+        const missing = health.missing_required?.length
+          ? `Missing backend env vars: ${health.missing_required.join(", ")}.`
+          : "Backend configuration is incomplete.";
+        throw new Error(missing);
+      }
+    } catch (err) {
+      const message = err instanceof Error
+        ? err.message
+        : "Could not reach the backend. Please make sure it is running and try again.";
+      setError(message);
+      setStage("error");
+      return;
+    }
+
     const url = `${API}/generate/stream?repo_url=${encodeURIComponent(normalizedUrl)}&tone=${tone}`;
     const es = new EventSource(url);
     es.onmessage = (e) => {
@@ -72,7 +106,7 @@ export default function App() {
       else                             { setProgress({ pct: data.pct, msg: data.msg }); }
     };
     es.onerror = () => {
-      setError("Connection lost. Please check if the backend is running or try again later.");
+      setError("Connection lost while streaming the film. Please check the backend and try again.");
       setStage("error");
       es.close();
     };

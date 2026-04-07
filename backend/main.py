@@ -1,4 +1,3 @@
-from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from typing import Literal
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,14 +26,7 @@ def _cache_get(key: tuple):
 def _cache_set(key: tuple, value):
     _CACHE[key] = (value, time.monotonic() + _CACHE_TTL)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    missing = [k for k in ("GITHUB_TOKEN", "GROQ_API_KEY") if not os.getenv(k)]
-    if missing:
-        raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
-    yield
-
-app = FastAPI(title="GitFlix API", lifespan=lifespan)
+app = FastAPI(title="GitFlix API")
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
@@ -52,8 +44,37 @@ class GenerateRequest(BaseModel):
     repo_url: str
     tone: Literal["epic", "documentary", "casual"] = "documentary"
 
+
+def _runtime_config_status() -> dict:
+    missing_required = []
+    warnings = []
+
+    if not os.getenv("GROQ_API_KEY"):
+        missing_required.append("GROQ_API_KEY")
+    if not os.getenv("GITHUB_TOKEN"):
+        warnings.append(
+            "GITHUB_TOKEN is not set. Public GitHub requests may be rate-limited."
+        )
+
+    return {
+        "ok": not missing_required,
+        "missing_required": missing_required,
+        "warnings": warnings,
+    }
+
+
+def _require_runtime_config() -> None:
+    status = _runtime_config_status()
+    if status["missing_required"]:
+        missing = ", ".join(status["missing_required"])
+        raise HTTPException(
+            status_code=503,
+            detail=f"Backend is missing required environment variables: {missing}",
+        )
+
 @app.post("/generate")
 async def generate(req: GenerateRequest):
+    _require_runtime_config()
     cache_key = (req.repo_url.strip().lower(), req.tone)
     cached = _cache_get(cache_key)
     if cached: return cached
@@ -71,9 +92,15 @@ async def generate(req: GenerateRequest):
 async def generate_stream(repo_url: str, tone: Literal["epic", "documentary", "casual"] = "documentary"):
     repo_url = repo_url.strip().lower()
     cache_key = (repo_url, tone)
+    config_status = _runtime_config_status()
 
     async def event_stream():
         try:
+            if config_status["missing_required"]:
+                missing = ", ".join(config_status["missing_required"])
+                yield f"data: {json.dumps({'stage': 'error', 'msg': f'Backend is missing required environment variables: {missing}'})}\n\n"
+                return
+
             cached = _cache_get(cache_key)
             if cached:
                 yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': cached.model_dump()})}\n\n"
@@ -146,4 +173,9 @@ async def generate_stream(repo_url: str, tone: Literal["epic", "documentary", "c
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    status = _runtime_config_status()
+    return {
+        "status": "ok" if status["ok"] else "degraded",
+        "missing_required": status["missing_required"],
+        "warnings": status["warnings"],
+    }
