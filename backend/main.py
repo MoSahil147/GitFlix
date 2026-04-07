@@ -1,11 +1,8 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from typing import Literal
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, JSONResponse
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import asyncio, json, os, logging
 from dotenv import load_dotenv
@@ -37,9 +34,6 @@ def _cache_set(key: tuple, value):
 
 # App
 
-limiter = Limiter(key_func=get_remote_address)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     missing = [k for k in ("GITHUB_TOKEN", "GROQ_API_KEY") if not os.getenv(k)]
@@ -48,16 +42,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-def _rate_limit_handler(request: Request, exc: Exception) -> JSONResponse:
-    return JSONResponse(
-        status_code=429,
-        content={"detail": "Rate limit exceeded. Try again later."},
-    )
-
-
 app = FastAPI(title="GitFlix API", lifespan=lifespan)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
@@ -80,8 +65,7 @@ class GenerateRequest(BaseModel):
 
 # POST /generate — full pipeline, single response
 @app.post("/generate")
-@limiter.limit("5/minute")
-async def generate(req: GenerateRequest, request: Request):
+async def generate(req: GenerateRequest):
     cache_key = (req.repo_url.strip().lower(), req.tone)
     cached = _cache_get(cache_key)
     if cached:
@@ -102,8 +86,7 @@ async def generate(req: GenerateRequest, request: Request):
 
 # GET /generate/stream — streams SSE progress to the frontend
 @app.get("/generate/stream")
-@limiter.limit("5/minute")
-async def generate_stream(request: Request, repo_url: str, tone: Literal["epic", "documentary", "casual"] = "documentary"):
+async def generate_stream(repo_url: str, tone: Literal["epic", "documentary", "casual"] = "documentary"):
     repo_url = repo_url.strip().lower()
     cache_key = (repo_url, tone)
 
