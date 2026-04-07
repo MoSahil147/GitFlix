@@ -98,13 +98,34 @@ async def generate_stream(repo_url: str, tone: Literal["epic", "documentary", "c
                 yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': cached.model_dump()})}\n\n"
                 return
 
-            yield f"data: {json.dumps({'stage': 'ingestion', 'pct': 5,  'msg': 'Fetching repo data…'})}\n\n"
-            repo_data = await asyncio.to_thread(fetch_repo_data, repo_url)
+            # Helper to yield progress from within the ingestion thread
+            queue = asyncio.Queue()
+            def progress_cb(pct, msg):
+                asyncio.run_coroutine_threadsafe(queue.put((pct, msg)), asyncio.get_event_loop())
 
-            yield f"data: {json.dumps({'stage': 'analytics', 'pct': 30, 'msg': 'Analysing commit history…'})}\n\n"
+            # Start ingestion in a thread
+            ingestion_task = asyncio.to_thread(fetch_repo_data, repo_url, on_progress=progress_cb)
+            
+            # Use a wrapper to wait for the task and signal completion
+            async def run_ingestion():
+                result = await ingestion_task
+                await queue.put(result)
+
+            asyncio.create_task(run_ingestion())
+
+            # Yield messages from the queue until we get the RepoData result
+            while True:
+                item = await queue.get()
+                if isinstance(item, RepoData):
+                    repo_data = item
+                    break
+                pct, msg = item
+                yield f"data: {json.dumps({'stage': 'ingestion', 'pct': pct, 'msg': msg})}\n\n"
+
+            yield f"data: {json.dumps({'stage': 'analytics', 'pct': 40, 'msg': 'Analysing commit history…'})}\n\n"
             analytics = await asyncio.to_thread(run_analytics, repo_data)
 
-            yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
+            yield f"data: {json.dumps({'stage': 'agent',     'pct': 60, 'msg': 'Writing the script…'})}\n\n"
             script = await asyncio.to_thread(build_script, analytics, tone)
 
             _cache_set(cache_key, script)
