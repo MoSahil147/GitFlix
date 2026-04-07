@@ -12,5 +12,5 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
-      - key: ELEVENLABS_API_KEY
+      - key: ALLOWED_ORIGINS
         sync: false

@@ -1,13 +1,19 @@
-from fastapi import FastAPI, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
-import json, os
+import json, os, logging
 from dotenv import load_dotenv
 load_dotenv()
 from ingestion.github_client import fetch_repo_data
 from analytics.analyzer import run_analytics
 from agent.director import build_script
+
+log = logging.getLogger("gitflix")
 
 
 # # Groq TTS helpers — disabled (voiceovers removed, subtitles only)
@@ -54,13 +60,38 @@ from agent.director import build_script
 
 # App
 
-app = FastAPI(title="GitFlix API")
+limiter = Limiter(key_func=get_remote_address)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    missing = [k for k in ("GITHUB_TOKEN", "GROQ_API_KEY") if not os.getenv(k)]
+    if missing:
+        raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
+    yield
+
+
+def _rate_limit_handler(request: Request, exc: Exception) -> JSONResponse:
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Try again later."},
+    )
+
+
+app = FastAPI(title="GitFlix API", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_handler)
+
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000"  # dev fallback; set in prod env
+).split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 
@@ -85,20 +116,24 @@ class TTSRequest(BaseModel):
 
 # POST /generate — full pipeline, single response
 @app.post("/generate")
-async def generate(req: GenerateRequest):
+@limiter.limit("5/minute")
+async def generate(req: GenerateRequest, request: Request):
     try:
         repo_data  = fetch_repo_data(req.repo_url)
         analytics  = run_analytics(repo_data)
         script     = build_script(analytics, req.tone)
-        # _add_audio(script, req.tone)  # ElevenLabs disabled (free tier blocked on cloud IPs)
         return script
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        log.error("[/generate] %s: %s", type(e).__name__, e)
+        raise HTTPException(status_code=500, detail="Failed to generate script.")
 
 
 # GET /generate/stream — streams SSE progress to the frontend
 @app.get("/generate/stream")
-async def generate_stream(repo_url: str, tone: str = "documentary"):
+@limiter.limit("5/minute")
+async def generate_stream(request: Request, repo_url: str, tone: str = "documentary"):
     repo_url = repo_url.strip().lower()
 
     async def event_stream():
@@ -112,18 +147,13 @@ async def generate_stream(repo_url: str, tone: str = "documentary"):
             yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
             script = build_script(analytics, tone)
 
-            # # TTS disabled — subtitles only
-            # voice = _TONE_VOICE.get(tone, "diana")
-            # for i, scene in enumerate(script.scenes):
-            #     yield f"data: {json.dumps({'stage': 'tts', 'pct': 75 + int(i / len(script.scenes) * 20), 'msg': f'Recording voiceover {i+1}/{len(script.scenes)}…'})}\n\n"
-            #     clean = _clean_narration(scene.narration_text)
-            #     scene.narration_text = clean
-            #     scene.audio_url = _groq_tts(clean, voice)
-
             yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': script.model_dump()})}\n\n"
 
-        except Exception as e:
+        except ValueError as e:
             yield f"data: {json.dumps({'stage': 'error', 'msg': str(e)})}\n\n"
+        except Exception as e:
+            log.error("[/generate/stream] %s: %s", type(e).__name__, e)
+            yield f"data: {json.dumps({'stage': 'error', 'msg': 'Failed to generate script.'})}\n\n"
 
     return StreamingResponse(
         event_stream(),

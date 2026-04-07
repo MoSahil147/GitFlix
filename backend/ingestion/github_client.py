@@ -1,12 +1,10 @@
-from click import File
-from langsmith import expect
-from langchain_core.load import load
 from github import Github
 
 # datetime - for working with dates and times
 # timezone - to make all timestamps timezone-aware (UTC)
 # timedelta - to calculate time differences e.g. "180 days ago"
-from datetime import datetime, timezone,timedelta
+import re
+from datetime import datetime, timezone, timedelta
 
 # defaultdict - like a regular dict but it auto created missing keys
 # saves us from checking everytime ki, "does this key exists" every time
@@ -20,8 +18,16 @@ load_dotenv()
 # now will import what we already cerated 
 from schemas import RepoData, CommitData, ContributorStats, FileHistory
 
+_GITHUB_URL_RE = re.compile(r'^https://github\.com/[\w.-]+/[\w.-]+/?$')
+
+def _validate_repo_url(url: str) -> None:
+    if not _GITHUB_URL_RE.match(url):
+        raise ValueError(f"Invalid GitHub repo URL: '{url}'. Must be https://github.com/owner/repo")
+
 def fetch_repo_data(repo_url: str, max_commits: int=500) -> RepoData:
     # Step 1
+    _validate_repo_url(repo_url)
+
     # will connecte the GitHub API using from .env
     token = os.getenv("GITHUB_TOKEN")
     g = Github(token)

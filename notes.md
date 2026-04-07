@@ -400,3 +400,100 @@ Symbol	Meaning
 ^1.2.3	Allow 1.x.x updates (minor + patch)
 ~1.2.3	Allow 1.2.x updates (patch only)
 1.2.3	Exact version, nothing else
+
+
+---
+
+## Security Hardening (added 2026-04-07)
+
+Six security fixes were added to the backend. Here's what each one does and why it matters.
+
+---
+
+### 1. Input Validation — `github_client.py`
+
+```python
+_GITHUB_URL_RE = re.compile(r'^https://github\.com/[\w.-]+/[\w.-]+/?$')
+
+def _validate_repo_url(url: str) -> None:
+    if not _GITHUB_URL_RE.match(url):
+        raise ValueError(f"Invalid GitHub repo URL: '{url}'")
+```
+
+**Why:** Without this, anyone could pass garbage strings (or path traversal like `../../etc/passwd`) to the URL parser. The regex enforces the exact shape `https://github.com/owner/repo` before anything else runs. It raises `ValueError` so the API returns a clean 400 Bad Request — not a 500 crash.
+
+---
+
+### 2. CORS Locked Down — `main.py`
+
+```python
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+
+app.add_middleware(CORSMiddleware, allow_origins=ALLOWED_ORIGINS, ...)
+```
+
+**Why:** `allow_origins=["*"]` means any website in the world can call your API from the browser. With locked origins, only your frontend domain is allowed. In development, the fallback is `localhost`. In production, set `ALLOWED_ORIGINS=https://your-app.netlify.app` in the Render dashboard.
+
+---
+
+### 3. Error Response Sanitization — `main.py`
+
+```python
+except Exception as e:
+    log.error("[/generate] %s: %s", type(e).__name__, e)
+    raise HTTPException(status_code=500, detail="Failed to generate script.")
+```
+
+**Why:** `detail=str(e)` was leaking Python tracebacks, file paths, and internal state to the client — useful for attackers, dangerous in production. Now the real error is logged server-side (visible in Render logs), and the client only gets a safe generic message. `ValueError` (like bad URL) still returns the specific message as a 400.
+
+---
+
+### 4. Rate Limiting — `main.py`
+
+```python
+limiter = Limiter(key_func=get_remote_address)
+
+@app.post("/generate")
+@limiter.limit("5/minute")
+async def generate(req: GenerateRequest, request: Request): ...
+```
+
+**Why:** `/generate` hits the GitHub API (up to 700 HTTP calls per request) and Groq 7 times. Without a rate limit, one person could spam it and burn all your API quota in seconds. `5/minute` per IP is generous for a real user but blocks bots. Returns HTTP 429 with a clean message if exceeded. `slowapi` installed via `uv add slowapi`.
+
+---
+
+### 5. Startup Env Validation — `main.py`
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    missing = [k for k in ("GITHUB_TOKEN", "GROQ_API_KEY") if not os.getenv(k)]
+    if missing:
+        raise RuntimeError(f"Missing required env vars: {', '.join(missing)}")
+    yield
+```
+
+**Why:** Previously, if a key was missing the app would start fine but every request would fail deep in the stack with a confusing error. Now the app refuses to start at all if keys are missing — you find out immediately at deploy time, not when a real user hits it. Uses FastAPI's `lifespan` (the modern way — `@app.on_event("startup")` is deprecated).
+
+---
+
+### 6. `render.yaml` Cleaned Up
+
+Replaced dead `ELEVENLABS_API_KEY` entry (TTS was disabled) with `ALLOWED_ORIGINS`. Dead credentials in config files cause confusion and accidental exposure if TTS ever gets re-enabled with a real key that shouldn't be there.
+
+---
+
+### LLM Load Balancer — `agent/llm_balancer.py`
+
+Added before the security work. Replaces the bare `ChatGroq(...)` call in `director.py`.
+
+```python
+llm = LLMLoadBalancer(temperature=0.7)
+result = llm.invoke(prompt)
+```
+
+- Round-robins between `llama-3.1-8b-instant` (fast, cheap) and `llama-3.3-70b-versatile` (smarter, fallback)
+- If the first model fails (rate limit, timeout, error) it automatically tries the next
+- No change to `.env` — same single `GROQ_API_KEY`
+- Logs which model failed and why before moving on
+
