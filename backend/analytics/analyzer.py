@@ -92,7 +92,9 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
     repo_midpoint = commits_df.index.min() + (commits_df.index.max()-commits_df.index.min())/2
     
     characters = []
-    
+    max_commits = max(c.total_commits for c in repo_data.contributors)
+    hero_assigned = False
+
     for i, contrib in enumerate(repo_data.contributors[:6]):
         # How many days ago did this person last commit?
         age_days = (now - pd.Timestamp(contrib.last_commit)).days
@@ -109,9 +111,10 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
             # Came in late but still made meaningful contributions
             role = "late_joiner"
 
-        elif contrib.total_commits == max(c.total_commits for c in repo_data.contributors):
-            # Most commits in the whole repo — they are the hero
+        elif contrib.total_commits == max_commits and not hero_assigned:
+            # Most commits in the whole repo — first one wins, no dual heroes
             role = "hero"
+            hero_assigned = True
 
         else:
             # Everyone else — just showed up consistently

@@ -1,12 +1,13 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
+from typing import Literal
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from pydantic import BaseModel
-import json, os, logging
+import asyncio, json, os, logging
 from dotenv import load_dotenv
 load_dotenv()
 from ingestion.github_client import fetch_repo_data
@@ -15,46 +16,22 @@ from agent.director import build_script
 
 log = logging.getLogger("gitflix")
 
+# In-memory cache: key = (repo_url, tone), value = (result_dict, expiry_timestamp)
+# TTL = 10 minutes — avoids re-hitting GitHub API for the same repo
+_CACHE: dict = {}
+_CACHE_TTL = 600  # seconds
 
-# # Groq TTS helpers — disabled (voiceovers removed, subtitles only)
-# _TONE_VOICE = {
-#     "epic":         "daniel",
-#     "documentary":  "diana",
-#     "casual":       "autumn",
-# }
-#
-# def _clean_narration(text: str) -> str:
-#     import re
-#     text = re.sub(r"^(here'?s?\s+[\w\s]*:|scene\s+\w+:|narration:|note:)[^\n]*\n?", "", text, flags=re.IGNORECASE)
-#     text = re.sub(r'\b[\w.-]+/([\w.-]+)\b', lambda m: m.group(1).replace('-', ' ').replace('_', ' '), text)
-#     text = re.sub(r'\b([a-z0-9]{2,})[-_]([a-z0-9])', lambda m: m.group(1) + ' ' + m.group(2), text, flags=re.IGNORECASE)
-#     text = re.sub(r'\s{2,}', ' ', text).strip()
-#     sentences = re.findall(r"[^.!?]+[.!?]+", text)
-#     result = sentences[0].strip() if sentences else text.strip()
-#     return result[:120].strip() or text[:120].strip()
-#
-# def _groq_tts(text: str, voice: str = "diana") -> str | None:
-#     import base64
-#     from groq import Groq
-#     api_key = os.getenv("GROQ_API_KEY")
-#     if not api_key:
-#         return None
-#     clean = _clean_narration(text)
-#     if not clean:
-#         return None
-#     try:
-#         client = Groq(api_key=api_key)
-#         response = client.audio.speech.create(
-#             model="canopylabs/orpheus-v1-english",
-#             voice=voice, input=clean, response_format="wav",
-#         )
-#         audio_bytes = response.read()
-#         b64 = base64.b64encode(audio_bytes).decode()
-#         return f"data:audio/wav;base64,{b64}"
-#     except Exception as e:
-#         print(f"[Groq TTS error] {type(e).__name__}: {e}")
-#         return None
 
+def _cache_get(key: tuple):
+    entry = _CACHE.get(key)
+    if entry and entry[1] > asyncio.get_event_loop().time():
+        return entry[0]
+    return None
+
+
+def _cache_set(key: tuple, value):
+    import time
+    _CACHE[key] = (value, time.monotonic() + _CACHE_TTL)
 
 
 
@@ -97,31 +74,24 @@ app.add_middleware(
 
 class GenerateRequest(BaseModel):
     repo_url: str
-    tone: str = "documentary"
+    tone: Literal["epic", "documentary", "casual"] = "documentary"
 
-
-class TTSRequest(BaseModel):
-    text: str
-    voice_id: str = "pNInz6obpgDQGcFmaJgB"
-
-
-# # POST /tts — disabled (voiceovers removed)
-# @app.post("/tts")
-# async def tts(req: TTSRequest):
-#     audio_url = _groq_tts(req.text, voice="leah")
-#     if not audio_url:
-#         raise HTTPException(status_code=503, detail="Groq TTS not configured or request failed")
-#     return {"audio_url": audio_url}
 
 
 # POST /generate — full pipeline, single response
 @app.post("/generate")
 @limiter.limit("5/minute")
 async def generate(req: GenerateRequest, request: Request):
+    cache_key = (req.repo_url.strip().lower(), req.tone)
+    cached = _cache_get(cache_key)
+    if cached:
+        log.info("[/generate] cache hit for %s", cache_key[0])
+        return cached
     try:
-        repo_data  = fetch_repo_data(req.repo_url)
-        analytics  = run_analytics(repo_data)
-        script     = build_script(analytics, req.tone)
+        repo_data  = await asyncio.to_thread(fetch_repo_data, req.repo_url)
+        analytics  = await asyncio.to_thread(run_analytics, repo_data)
+        script     = await asyncio.to_thread(build_script, analytics, req.tone)
+        _cache_set(cache_key, script)
         return script
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -133,20 +103,28 @@ async def generate(req: GenerateRequest, request: Request):
 # GET /generate/stream — streams SSE progress to the frontend
 @app.get("/generate/stream")
 @limiter.limit("5/minute")
-async def generate_stream(request: Request, repo_url: str, tone: str = "documentary"):
+async def generate_stream(request: Request, repo_url: str, tone: Literal["epic", "documentary", "casual"] = "documentary"):
     repo_url = repo_url.strip().lower()
+    cache_key = (repo_url, tone)
 
     async def event_stream():
         try:
+            cached = _cache_get(cache_key)
+            if cached:
+                log.info("[/generate/stream] cache hit for %s", repo_url)
+                yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': cached.model_dump()})}\n\n"
+                return
+
             yield f"data: {json.dumps({'stage': 'ingestion', 'pct': 5,  'msg': 'Fetching repo data…'})}\n\n"
-            repo_data = fetch_repo_data(repo_url)
+            repo_data = await asyncio.to_thread(fetch_repo_data, repo_url)
 
             yield f"data: {json.dumps({'stage': 'analytics', 'pct': 30, 'msg': 'Analysing commit history…'})}\n\n"
-            analytics = run_analytics(repo_data)
+            analytics = await asyncio.to_thread(run_analytics, repo_data)
 
             yield f"data: {json.dumps({'stage': 'agent',     'pct': 55, 'msg': 'Writing the script…'})}\n\n"
-            script = build_script(analytics, tone)
+            script = await asyncio.to_thread(build_script, analytics, tone)
 
+            _cache_set(cache_key, script)
             yield f"data: {json.dumps({'stage': 'done', 'pct': 100, 'data': script.model_dump()})}\n\n"
 
         except ValueError as e:

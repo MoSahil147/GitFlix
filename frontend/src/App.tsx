@@ -58,16 +58,24 @@ export default function App() {
     const url = `${API}/generate/stream?repo_url=${encodeURIComponent(normalizedUrl)}&tone=${tone}`;
     const es = new EventSource(url);
     es.onmessage = (e) => {
-      const data = JSON.parse(e.data);
+      let data: Record<string, any>;
+      try {
+        data = JSON.parse(e.data);
+      } catch {
+        console.error("[GitFlix] malformed SSE message:", e.data);
+        return;
+      }
       if (data.stage === "done") {
-        const voiceCount = (data.data.scenes as {audio_url: string|null}[]).filter(s => s.audio_url).length;
-        console.log(`[GitFlix] voiceovers received: ${voiceCount}/7`);
         setScript(data.data); setStage("preview"); es.close();
       }
       else if (data.stage === "error") { setError(data.msg);   setStage("error");   es.close(); }
       else                             { setProgress({ pct: data.pct, msg: data.msg }); }
     };
-    es.onerror = () => { setError("Connection failed. Is the backend running?"); setStage("error"); es.close(); };
+    es.onerror = () => {
+      setError("Connection lost. You may have hit the rate limit (5 requests/min) — try again shortly, or check that the backend is running.");
+      setStage("error");
+      es.close();
+    };
   };
 
   const handleExport = () => {

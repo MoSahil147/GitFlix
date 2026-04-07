@@ -483,6 +483,134 @@ Replaced dead `ELEVENLABS_API_KEY` entry (TTS was disabled) with `ALLOWED_ORIGIN
 
 ---
 
+---
+
+## Code Quality & Performance Fixes (added 2026-04-07)
+
+### 1. Tone Validation — `main.py`
+
+```python
+tone: Literal["epic", "documentary", "casual"] = "documentary"
+```
+
+**Why:** `tone: str` accepted anything. Passing `tone=hack` would flow all the way to `ScriptJSON` which has a `Literal` type and crash with a Pydantic error deep in the stack — confusing and hard to debug. Now FastAPI rejects bad tone values at the request level with a clean 422 before the pipeline even starts. Applied to both the POST body and the stream query param.
+
+---
+
+### 2. Non-Blocking I/O — `main.py`
+
+```python
+repo_data = await asyncio.to_thread(fetch_repo_data, req.repo_url)
+analytics  = await asyncio.to_thread(run_analytics, repo_data)
+script     = await asyncio.to_thread(build_script, analytics, req.tone)
+```
+
+**Why:** FastAPI is async but `fetch_repo_data`, `run_analytics`, and `build_script` are all synchronous and make hundreds of blocking HTTP calls (GitHub API + Groq). Calling them directly inside `async def` blocks the entire event loop — no other requests can be served while one user waits. `asyncio.to_thread` runs them in a thread pool so the event loop stays free.
+
+---
+
+### 3. In-Memory Cache with TTL — `main.py`
+
+```python
+_CACHE: dict = {}
+_CACHE_TTL = 600  # 10 minutes
+
+cache_key = (repo_url, tone)
+cached = _cache_get(cache_key)
+if cached:
+    return cached  # instant response
+```
+
+**Why:** Every `/generate` call hits the GitHub API ~700 times. If two people request the same repo within 10 minutes, the second one is instant — no API calls at all. Cache key is `(repo_url, tone)` so different tones on the same repo are cached separately. Both the POST and stream endpoints share the same cache. TTL is 600 seconds (10 min) after which the cache expires and fresh data is fetched.
+
+---
+
+### 4. Hero Role Bug Fix — `analyzer.py`
+
+```python
+max_commits = max(c.total_commits for c in repo_data.contributors)  # computed once
+hero_assigned = False
+
+# inside the loop:
+elif contrib.total_commits == max_commits and not hero_assigned:
+    role = "hero"
+    hero_assigned = True
+```
+
+**Why:** The old code recalculated `max()` on every loop iteration — O(n²) for no reason. Worse, if two contributors tied for most commits, both got assigned "hero", which broke the film's story structure. Fixed by computing max once before the loop and using `hero_assigned` flag so only the first (highest ranked) contributor gets the hero role.
+
+---
+
+### 5. URL Normalization Centralized — `github_client.py`
+
+```python
+def _validate_repo_url(url: str) -> str:
+    url = url.strip().lower()  # normalize here
+    if not _GITHUB_URL_RE.match(url):
+        raise ValueError(...)
+    return url.rstrip("/")
+```
+
+**Why:** The stream endpoint was doing `repo_url.strip().lower()` manually, but `/generate` wasn't normalizing at all. `Github.com/Foo/Bar` and `github.com/foo/bar` would behave differently. Now normalization lives in one place and both endpoints get it automatically since they both call `fetch_repo_data`.
+
+---
+
+### 6. `.env.example` — `backend/.env.example`
+
+Lists all required env vars with placeholder values and comments. New devs (or you on a new machine) know exactly what to set without reading the code. Three keys: `GITHUB_TOKEN`, `GROQ_API_KEY`, `ALLOWED_ORIGINS`.
+
+---
+
+### 7. Dead Code Removed — `main.py`
+
+Removed `TTSRequest` model and the commented-out `/tts` endpoint block. TTS is fully disabled — keeping dead models and commented endpoints adds noise and confusion.
+
+---
+
+---
+
+## Frontend Fixes (added 2026-04-07)
+
+### 1. SSE JSON Parse Safety — `App.tsx`
+
+```tsx
+try {
+  data = JSON.parse(e.data);
+} catch {
+  console.error("[GitFlix] malformed SSE message:", e.data);
+  return;
+}
+```
+
+**Why:** `JSON.parse(e.data)` with no try/catch would throw and crash the entire `onmessage` handler if the backend sent a malformed SSE chunk (network glitch, partial message, etc.). Now a bad chunk is logged and skipped — the stream keeps going.
+
+---
+
+### 2. Rate Limit Error Message — `App.tsx`
+
+```tsx
+es.onerror = () => {
+  setError("Connection lost. You may have hit the rate limit (5 requests/min) — try again shortly, or check that the backend is running.");
+  ...
+};
+```
+
+**Why:** EventSource's `onerror` fires on ANY connection failure — including HTTP 429 (rate limit). The old message "Is the backend running?" was misleading and confusing when the real cause was a rate limit. The new message covers both cases so users know what to do.
+
+---
+
+### 3. `frontend/.env.example`
+
+Documents `VITE_API_URL` — the only env var the frontend needs. In development it defaults to `http://localhost:8000`. In production on Netlify, set it to your Render backend URL.
+
+---
+
+### 4. Dead TTS Code Removed — `main.py`
+
+Deleted the 38-line commented-out Groq TTS block (`_TONE_VOICE`, `_clean_narration`, `_groq_tts`). TTS has been disabled for a long time — keeping commented code this large is just noise. If TTS comes back, git history has it.
+
+---
+
 ### LLM Load Balancer — `agent/llm_balancer.py`
 
 Added before the security work. Replaces the bare `ChatGroq(...)` call in `director.py`.

@@ -20,13 +20,16 @@ from schemas import RepoData, CommitData, ContributorStats, FileHistory
 
 _GITHUB_URL_RE = re.compile(r'^https://github\.com/[\w.-]+/[\w.-]+/?$')
 
-def _validate_repo_url(url: str) -> None:
+def _validate_repo_url(url: str) -> str:
+    """Normalize and validate. Returns the cleaned URL or raises ValueError."""
+    url = url.strip().lower()
     if not _GITHUB_URL_RE.match(url):
         raise ValueError(f"Invalid GitHub repo URL: '{url}'. Must be https://github.com/owner/repo")
+    return url.rstrip("/")
 
 def fetch_repo_data(repo_url: str, max_commits: int=500) -> RepoData:
     # Step 1
-    _validate_repo_url(repo_url)
+    repo_url = _validate_repo_url(repo_url)
 
     # will connecte the GitHub API using from .env
     token = os.getenv("GITHUB_TOKEN")
