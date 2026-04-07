@@ -4,7 +4,7 @@
 
 Live at [gitflix.netlify.app](https://gitflix.netlify.app)
 
-https://deepwiki.com/badge-maker?url=https%3A%2F%2Fdeepwiki.com%2FMoSahil147%2FGitFlix
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/MoSahil147/GitFlix)
 
 GitFlix turns any public GitHub repository into a cinematic documentary, complete with animated scenes, commit analytics, a generated narrative and a full soundtrack. Paste a URL, pick a tone and watch your codebase come alive on screen.
 
