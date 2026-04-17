@@ -10,11 +10,11 @@ Configure via .env:
 """
 
 import os
-import itertools
+import itertools # round robin between models
 from langchain_groq import ChatGroq
 
 _MODELS = [
-    "llama-3.1-8b-instant",
+    "llama-3.1-8b-instant", # first priority!
     "llama-3.3-70b-versatile",
 ]
 
@@ -29,7 +29,7 @@ class LLMLoadBalancer:
         text = result.content.strip()
     """
 
-    def __init__(self, temperature: float = 0.7):
+    def __init__(self, temperature: float = 0.7): #0.7 as more creative
         self._api_key = os.getenv("GROQ_API_KEY", "").strip()
         if not self._api_key:
             raise RuntimeError("GROQ_API_KEY not set in environment.")

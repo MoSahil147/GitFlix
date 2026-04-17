@@ -13,6 +13,7 @@ from schemas import RepoData, CommitData, ContributorStats, FileHistory
 
 log = logging.getLogger("gitflix.ingestion")
 
+# bouncher alert
 _GITHUB_URL_RE = re.compile(r'^https://github\.com/[\w.-]+/[\w.-]+/?$')
 
 def _validate_repo_url(url: str) -> str:
@@ -20,7 +21,7 @@ def _validate_repo_url(url: str) -> str:
     if not _GITHUB_URL_RE.match(url):
         raise ValueError(f"Invalid GitHub repo URL: '{url}'. Must be https://github.com/owner/repo")
     return url.rstrip("/")
-
+# we will fetch all the datas here
 def fetch_repo_data(repo_url: str, max_commits: int=100, on_progress: Optional[Callable[[int, str], None]]=None) -> RepoData:
     """
     Fetches repository data from GitHub.
@@ -30,12 +31,13 @@ def fetch_repo_data(repo_url: str, max_commits: int=100, on_progress: Optional[C
     token = os.getenv("GITHUB_TOKEN")
     if not token:
         log.warning("GITHUB_TOKEN not found. API rate limits will be very restrictive.")
-    
+    # we are getting connecting here
     g = Github(token)
     
+    # url parsing, https://github.com/mosahil147/GitFlix,  -1 -> last part with us!
     parts = repo_url.rstrip("/").split("github.com/")[-1].split("/")
     owner, repo_name = parts[0], parts[1]
-    
+    #we are getting the repo from here 
     if on_progress: on_progress(5, f"Connecting to {owner}/{repo_name}...")
     repo = g.get_repo(f"{owner}/{repo_name}")
     
@@ -47,11 +49,12 @@ def fetch_repo_data(repo_url: str, max_commits: int=100, on_progress: Optional[C
     # This allows us to get broad contributor stats without hitting too many API endpoints
     all_commits = repo.get_commits()
     
-    # Limit to 300 for general stats, but only 100 for detailed file/line info
+    # (Clever) Limit to 300 for general stats, but only 100 for detailed file/line info
     total_to_scan = min(300, all_commits.totalCount)
     
-    detailed_limit = max_commits
+    detailed_limit = max_commits # 100 in the case, have defined above
     
+    #better tracking
     contrib_map = defaultdict(lambda: {
         "commits": 0, "lines": 0, "first": None, "last": None, "months": set()
     })
@@ -84,7 +87,7 @@ def fetch_repo_data(repo_url: str, max_commits: int=100, on_progress: Optional[C
                     lines_deleted=lines_deleted,
                 ))
                 
-                # Update line stats for contributors
+                # Update line stats for contributors, for better tracking
                 contrib_map[author_login]["lines"] += (lines_added + lines_deleted)
                 
             except Exception as e:

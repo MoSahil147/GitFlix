@@ -4,14 +4,15 @@ from datetime import datetime, timezone
 from typing import Dict, Any
 from schemas import RepoData
 
-# collage or colours, this what each contributor get sin the file
+# Colours assigned to each contributor in the film — used in S02 (The Cast) and S03 (The Rise)
+# Each contributor gets one colour, cycling if there are more than 8
 CONTRIBUTOR_COLORS = [
     "#5DCAA5", "#7F77DD", "#EF9F27", "#D85A30",
     "#378ADD", "#D4537E", "#639922", "#888780"
 ]
 
 def _arc_summary(role: str, login: str, commits: int) -> str:
-    # One sentence description of each character for the film
+    # One sentence description of each character — shown in S02 (The Cast)
     summaries = {
         "hero": f"{login} drove the project with {commits} commits, the backbone of this codebase.",
         "ghost": f"{login} contributed {commits} commits then disappeared, their work lives on.",
@@ -22,49 +23,83 @@ def _arc_summary(role: str, login: str, commits: int) -> str:
 
 
 def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
-    # turn the list of comit objects into a table (rows=commits, colums = fields)
-    commits_df=pd.DataFrame([c.model_dump() for c in repo_data.commits])
-    
-    # make the timestamp cloumn that bhenaves like real dates, utc =True avoids timezone errors
-    commits_df["timestamp"]=pd.to_datetime(commits_df["timestamp"], utc=True)
-    
-    # sort oldest commit to first
-    commits_df=commits_df.sort_values("timestamp")
-    
-# Parts 2- weekly commit timeseries + spike detection! 
 
-    # make timestamp the index so we can group by week
+    # ── PART 1: Build the DataFrame ─────────────────────────────────────────
+    # Used by: ALL scenes (this is the foundation everything else is built on)
+    # Turn the list of commit objects into a table (rows=commits, columns=fields)
+    commits_df = pd.DataFrame([c.model_dump() for c in repo_data.commits])
+
+    # Make the timestamp column behave like real dates. utc=True avoids timezone errors
+    commits_df["timestamp"] = pd.to_datetime(commits_df["timestamp"], utc=True)
+
+    # Sort oldest commit first so timeseries math works correctly
+    commits_df = commits_df.sort_values("timestamp")
+
+    # ── PART 2: Weekly commit timeseries + spike detection ───────────────────
+    # Used by: S03 (The Rise) — the animated bar chart that grows over time
+    #          S04 (The Plot Twist) — the spike week is the dramatic moment
+
+    # Set timestamp as the DataFrame index so pandas can group by time periods
     commits_df.set_index("timestamp", inplace=True)
-    
-    # count commits per week
+
+    # resample("W") buckets every commit into its calendar week (week-ending Sunday)
+    # .count() counts how many commits landed in each bucket
+    # reset_index() brings "week" back as a normal column (not the index)
+    # sha = Secure Hash algo, its teh 8 random looking chars a3fb12c, we are counting this because sha is never empty never null
     weekly = commits_df["sha"].resample("W").count().reset_index()
-    weekly.columns=["week", "count"]
-    
-    # find the average and spread
+    weekly.columns = ["week", "count"]
+
+    # ── SPIKE DETECTION using the 2-SIGMA (2 standard deviation) RULE ──────────
+    #
+    # MEAN  = the average number of commits per week across the whole repo history.
+    #         This is our "baseline" — what a normal week looks like.
+    #
+    # STD   = the standard deviation — measures how much week-to-week commit counts
+    #         SPREAD AROUND the mean. A high std means the repo is bursty;
+    #         a low std means it's steady and predictable.
     mean = weekly["count"].mean()
-    std = weekly["count"].std()
-    
-    # Flag weeks that are unusually busy
-    weekly["is_spike"]=weekly["count"]>(mean +2*std)
-    
-    # convert to list of dicts for the agent
+    std  = weekly["count"].std()
+
+    # WHY 2 * STD (2σ)?
+    #   In a roughly NORMAL distribution, ~95% of values fall within mean ± 2σ.
+    #   So anything ABOVE mean + 2σ is in the top ~2.5% — genuinely unusual.
+    #
+    #   • 1.5σ threshold → too SENSITIVE, flags many ordinary busy weeks as spikes.
+    #   • 3σ threshold   → too STRICT, only catches truly extreme outliers, misses
+    #                       real dramatic moments in most repos.
+    #   • 2σ is the SWEET SPOT: "unusual but not once-in-a-lifetime."
+    #
+    # EDGE CASE — LOW-VARIANCE REPOS (e.g. exactly 1 commit every week for years):
+    #   std ≈ 0, so mean + 2*std ≈ mean.
+    #   Any week with even 2 commits becomes a spike.
+    #   This is CORRECT BEHAVIOUR — any burst IS genuinely anomalous for that repo.
+    #
+    # ASSUMPTION: This heuristic assumes commit counts are ROUGHLY NORMALLY DISTRIBUTED.
+    #   In practice they are RIGHT-SKEWED (one big launch week pulls the mean up).
+    #   A more robust alternative would use MEDIAN + IQR instead of mean + std,
+    #   since median is not affected by outliers.
+    weekly["is_spike"] = weekly["count"] > (mean + 2 * std)
+
+    # Convert to list of dicts so the LangChain agent and frontend can consume it
+    # → this becomes commit_series in the final return, fed into S03 visual_params
     commit_series = weekly.to_dict("records")
-    
-# Part 3- ERA dedection, chapters of repo lif. a new era will start when the repo goes dead for 4+ weeekkksss then comes back!
-    # find all weeks that had zero commits
-    zero_weeks=weekly[weekly["count"]==0]
-    
-    # era_start beginds at veru forst commit
-    era_start=commits_df.index.min()
-    
-    eras=[]
-    
-    # loops thorufh the dead week
+
+    # ── PART 3: Era detection ────────────────────────────────────────────────
+    # Used by: S03 (The Rise) — eras are shown as chapter markers on the timeline
+    # A new era starts when the repo goes dead for 4+ weeks then comes back
+
+    # Find all weeks that had zero commits (dead weeks)
+    zero_weeks = weekly[weekly["count"] == 0]
+
+    # era_start begins at the very first commit
+    era_start = commits_df.index.min()
+
+    eras = []
+
+    # Loop through dead weeks and cut a new era whenever there's a 28+ day gap
     for _, row in zero_weeks.iterrows():
-        
-        # setting the conditions
-        # if gap between era_start and the dead week is more than 28 days
-        # it means that a proper active period happened - will save that as an era 
+        # If the gap between era_start and this dead week is more than 28 days,
+        # a proper active period happened — save it as a completed era
         if (row["week"] - era_start).days > 28:
             eras.append({
                 "start": str(era_start.date()),
@@ -80,17 +115,18 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
         "end": str(commits_df.index.max().date()),
         "label": "Latest era",
     })
-    
-    #  part4 Charcter arc assignment
-    # will decide which role who will play in the film
-    
-    # get current time to calulate how long ago someone last commited
+
+    # ── PART 4: Character arc assignment ────────────────────────────────────
+    # Used by: S02 (The Cast) — each contributor becomes a character with a role
+    # Roles: hero, ghost, late_joiner, consistent
+    # Each character gets a colour, role, commit count, and a one-sentence arc summary
+
+    # Get current time to calculate how long ago someone last committed
     now = pd.Timestamp.now(tz="UTC")
-    
-    # will find the middle point of the repo's life
-    # use to detect if someone joined late
-    repo_midpoint = commits_df.index.min() + (commits_df.index.max()-commits_df.index.min())/2
-    
+
+    # Find the midpoint of the repo's life — used to detect late joiners
+    repo_midpoint = commits_df.index.min() + (commits_df.index.max() - commits_df.index.min()) / 2
+
     characters = []
     max_commits = max(c.total_commits for c in repo_data.contributors)
     hero_assigned = False
@@ -102,7 +138,7 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
         # Did this person start contributing after the repo's halfway point?
         joined_late = pd.Timestamp(contrib.first_commit) > repo_midpoint
 
-        # Assign a role based on behaviour
+        # Assign a role based on behaviour (charecter time)
         if age_days > 180 and contrib.total_commits > 5:
             # Disappeared 180+ days ago but did real work — they are a ghost
             role = "ghost"
@@ -119,28 +155,31 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
         else:
             # Everyone else — just showed up consistently
             role = "consistent"
-            
+
         characters.append({
-            "login":contrib.login,
-            "color": CONTRIBUTOR_COLORS[i%len(CONTRIBUTOR_COLORS)],
-            "role":role,
-            "commit_count":contrib.total_commits,
-            "active_months":contrib.active_months,
-            "arc_summary":_arc_summary(role, contrib.login, contrib.total_commits),
+            "login": contrib.login,
+            "color": CONTRIBUTOR_COLORS[i % len(CONTRIBUTOR_COLORS)],
+            "role": role,
+            "commit_count": contrib.total_commits,
+            "active_months": contrib.active_months,
+            "arc_summary": _arc_summary(role, contrib.login, contrib.total_commits),
         })
-            
-    # Part5- Herooo comit detection  
+
+    # ── PART 5: Hero commit detection ───────────────────────────────────────
+    # Used by: S06 (The Hero Moment) — shown as the single biggest commit card
+    # Hero = the commit that changed the most lines (lines_added + lines_deleted)
+
     # reset_index() brings timestamp back as a normal column
-    # we need this because idxmax() works on column position not index
+    # we need this because idxmax() works on column position, not the index
     commits_reset = commits_df.reset_index()
 
-    # Find the row number of the commit with most lines changed
+    # Find the row number of the commit with the most lines changed
     hero_idx = (commits_reset["lines_added"] + commits_reset["lines_deleted"]).idxmax()
 
     # Grab that row
     hero_row = commits_reset.iloc[hero_idx]
 
-    # Store the important details
+    # Store the important details — fed into S06 visual_params in director.py
     hero_commit = {
         "sha": hero_row["sha"],
         "author_login": hero_row["author_login"],
@@ -148,19 +187,19 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
         "lines_changed": int(hero_row["lines_added"] + hero_row["lines_deleted"]),
         "timestamp": str(hero_row["timestamp"].date()),
     }
-    
-    # part 6 - plot twist detection
-    # find the single busiest week in the whole repo history
 
-    # filter to only the weeks marked as spikes
+    # ── PART 6: Plot twist detection ────────────────────────────────────────
+    # Used by: S04 (The Plot Twist) — the most dramatic week becomes the twist scene
+    # Plot twist = the spike week with the highest commit count
+
+    # Filter to only the weeks marked as spikes
     spike_rows = weekly[weekly["is_spike"] == True]
 
-    # default is None — some repos have no spikes at all
+    # Default is None — some repos have no spikes at all, S04 still renders with fallback
     plot_twist = None
 
     if not spike_rows.empty:
-
-        # find the spike week with the highest commit count
+        # Find the spike week with the highest commit count
         biggest_spike = spike_rows.loc[spike_rows["count"].idxmax()]
 
         plot_twist = {
@@ -168,16 +207,25 @@ def run_analytics(repo_data: RepoData) -> Dict[str, Any]:
             "commit_count": int(biggest_spike["count"]),
             "type": "commit_spike",
         }
-        
-    # part 7 - ghost files + final return
 
-    # pull files marked as ghost from ingestion
-    # ghost = not touched in 180+ days but was modified more than 3 times
-    # only take top 10
+    # ── PART 7: Ghost files + final return ──────────────────────────────────
+    # Used by: S05 (Ghost Towns) — abandoned files shown as a graveyard visual
+    # Ghost = file not touched in 180+ days but was once actively modified
+    # NOTE: this always returns [] because file_histories is never populated in ingestion
+
+    # Pull files marked as ghost from ingestion (top 10 only)
     ghost_files = [f.path for f in repo_data.file_histories if f.is_ghost][:10]
 
-    # package everything into one dict and return it
-    # this is what the LangChain agent will receive
+    # ── FINAL RETURN ─────────────────────────────────────────────────────────
+    # This dict is the analytics object passed to build_script() in director.py
+    # Every key maps to at least one scene:
+    #   repo_name, description, primary_language → S01, S07
+    #   total_commits, repo_age_days, contributor_count → S01, S03, S07
+    #   commit_series + eras → S03 visual_params
+    #   characters → S02
+    #   hero_commit → S06 visual_params
+    #   plot_twist → S04
+    #   ghost_files → S05
     return {
         "repo_name": repo_data.repo_name,
         "description": repo_data.description,

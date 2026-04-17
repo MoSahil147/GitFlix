@@ -44,6 +44,7 @@ Tone guide:
 Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real person talking."""
 
     # call all 5 tools to pull story data from analytics
+    # we return as json strings because Langchain passes datas as strings not Python Objects
     contributors  = json.loads(analyze_contributors.invoke(analytics_str))
     plot_twist_raw = json.loads(detect_plot_twist.invoke(analytics_str))
     hero_raw      = json.loads(find_hero_commit.invoke(analytics_str))
@@ -51,7 +52,7 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
     commit_series = json.loads(get_commit_series.invoke(analytics_str))
 
     # narrate() sends context to the LLM and gets back 2-3 sentences
-    # if LLM fails, it returns the fallback from SCENE_TEMPLATES
+    # if LLM fails, it returns the fallback from SCENE_TEMPLATES # rulessss
     def narrate(scene_id: str, context: str, fallback: str) -> str:
         prompt = (
             f"{SYSTEM_PROMPT}\n\nContext: {context}\n\n"
@@ -76,6 +77,7 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
     latest_week = analytics["commit_series"][-1]["week"][:4] if analytics.get("commit_series") else None
     twist_week  = plot_twist_raw.get("week", "")[:4] if plot_twist_raw.get("week") else None  # year only
 
+    # this is where the datas fed
     context_map = {
         "S01": f"Repository '{repo_name}' started by {contributors[0]['login'] if contributors else 'unknown'}{f' in {first_week}' if first_week else ''}. {analytics['total_commits']} total commits.",
         "S02": f"Top contributors: {[c['login'] for c in contributors[:3]]}. {analytics['contributor_count']} total contributors.",
@@ -111,6 +113,7 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
         ))
 
     # build character objects from the contributors data
+    # ** means unpack this dictionary into keyword arguments.
     characters = [Character(**c) for c in contributors[:6]]
 
     # build plot twist object if one was found

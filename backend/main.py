@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from typing import Literal
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware # for forntend to talk to backend
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import asyncio, json, os, logging, queue, threading, time
