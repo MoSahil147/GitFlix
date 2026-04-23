@@ -54,7 +54,8 @@ def fetch_repo_data(repo_url: str, max_commits: int=100, on_progress: Optional[C
     
     detailed_limit = max_commits # 100 in the case, have defined above
     
-    #better tracking
+    #better tracking, the Scoreboard
+    # default dict is crazyy, as normal dict would crash on missing key, but this guy will create a blank entry!
     contrib_map = defaultdict(lambda: {
         "commits": 0, "lines": 0, "first": None, "last": None, "months": set()
     })
@@ -102,6 +103,7 @@ def fetch_repo_data(repo_url: str, max_commits: int=100, on_progress: Optional[C
                 ))
         
         # General stats for all scanned commits
+        # first to detct late joiners, last to detect ghosts!
         m = contrib_map[author_login]
         m["commits"] += 1
         m["months"].add(timestamp.strftime("%Y-%m"))
