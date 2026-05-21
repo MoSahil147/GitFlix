@@ -4,7 +4,7 @@ import type { PlayerRef } from "@remotion/player";
 import { GitflixVideo, SCENE_DURATIONS } from "./remotion/GitflixVideo";
 import type { ScriptJSON } from "./remotion/types";
 
-const API = ((import.meta.env.VITE_API_URL ?? "").trim() || (import.meta.env.DEV ? "/api" : "")).replace(/\/$/, "");
+const API = (import.meta.env.VITE_API_URL ?? "").trim() || (import.meta.env.DEV ? "/api" : "");
 const FPS = 30;
 
 const ACCENT  = "#2A7FD4";
@@ -81,11 +81,9 @@ export default function App() {
         throw new Error(missing);
       }
     } catch (err) {
-      const message = err instanceof TypeError
-        ? `Could not reach the backend at ${API || "[missing VITE_API_URL]"}. Check VITE_API_URL, backend availability, and CORS (ALLOWED_ORIGINS).`
-        : err instanceof Error
-          ? err.message
-          : "Could not reach the backend. Please make sure it is running and try again.";
+      const message = err instanceof Error
+        ? err.message
+        : "Could not reach the backend. Please make sure it is running and try again.";
       setError(message);
       setStage("error");
       return;
