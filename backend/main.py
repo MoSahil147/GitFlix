@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from typing import Literal
-from fastapi.middleware.cors import CORSMiddleware # for forntend to talk to backend
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import asyncio, json, os, logging, queue, threading, time
@@ -28,16 +28,24 @@ def _cache_set(key: tuple, value):
 
 app = FastAPI(title="GitFlix API")
 
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:3000"
-).split(",")
+def _parse_allowed_origins() -> list[str]:
+    raw = os.getenv(
+        "ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173,http://127.0.0.1:3000",
+    )
+    return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+
+ALLOWED_ORIGINS = _parse_allowed_origins()
+ALLOWED_ORIGIN_REGEX = (
+    r"^https://([a-z0-9-]+\.)?(netlify\.app|vercel\.app|pages\.dev)$"
+)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 class GenerateRequest(BaseModel):
