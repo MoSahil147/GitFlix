@@ -1,0 +1,77 @@
+GitFlix Architecture
+====================
+
+  USER BROWSER
+  +---------------------------+
+  |   gitflix.netlify.app     |
+  |                           |
+  |   App.tsx                 |
+  |   - repo URL input        |
+  |   - tone selector         |
+  |   - EventSource stream    |
+  +------------+--------------+
+               |
+               | VITE_API_URL (SSE stream)
+               | POST /generate/stream
+               |
+  RENDER BACKEND (FastAPI)
+  +---------------------------+
+  |   main.py                 |
+  |   - /generate/stream      |
+  |   - /status               |
+  |   - in-memory cache       |
+  +---+-------+-------+-------+
+      |       |       |
+      v       v       v
+  +-------+ +----------+ +----------+
+  |ingesti| |analytics | |  agent   |
+  |on     | |          | |          |
+  |       | |analyzer  | |director  |
+  |github_| |.py       | |.py       |
+  |client | |          | |          |
+  |.py    | | - chars  | | - LLM    |
+  |       | | - hero   | |   calls  |
+  | PyGit | |   commit | | - builds |
+  | Hub   | | - ghosts | |   scenes |
+  | API   | | - weekly | | - writes |
+  +---+---+ |   series | |   narrat.|
+      |      +----------+ +----+-----+
+      |                        |
+      | GitHub REST API        | Groq API
+      v                        v
+  +----------+           +----------+
+  | github   |           | LLM      |
+  | .com     |           | (Groq)   |
+  +----------+           +----------+
+
+  schemas.py  <-- shared data contracts used by all layers
+  (CommitData, HeroCommit, ScriptJSON, Character, Scene ...)
+
+
+  FRONTEND RENDER PIPELINE
+  +--------------------------------------------------+
+  |  GitflixVideo.tsx  (Remotion composition)        |
+  |                                                  |
+  |  Series                                          |
+  |  +--------+  +--------+  +--------+  +--------+ |
+  |  | S01    |->| S02    |->| S03    |->| S04    | |
+  |  | Origin |  | Cast   |  | Rise   |  |PlotTwi.| |
+  |  +--------+  +--------+  +--------+  +--------+ |
+  |                                                  |
+  |  +--------+  +--------+  +--------+             |
+  |  | S05    |->| S06    |->| S07    |             |
+  |  | Ghosts |  | Hero   |  | Finale |             |
+  |  +--------+  +--------+  +--------+             |
+  |                                                  |
+  |  Subtitle.tsx  (shared, rendered on every scene) |
+  +--------------------------------------------------+
+
+  DATA FLOW
+  ---------
+  GitHub URL
+    --> github_client.py  (fetch commits, stats, patch)
+    --> analyzer.py       (characters, hero commit, ghost files, weekly series)
+    --> director.py       (LLM narration, build ScriptJSON)
+    --> SSE stream        (progress % + final JSON)
+    --> App.tsx           (sets script state)
+    --> GitflixVideo.tsx  (renders film frame by frame)
