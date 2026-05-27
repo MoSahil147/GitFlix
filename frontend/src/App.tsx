@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Player } from "@remotion/player";
 import type { PlayerRef } from "@remotion/player";
 import { GitflixVideo, SCENE_DURATIONS } from "./remotion/GitflixVideo";
@@ -55,9 +55,69 @@ export default function App() {
   const [progress, setProgress] = useState({ pct: 0, msg: "" });
   const [script, setScript]     = useState<ScriptJSON | null>(null);
   const [error, setError]       = useState("");
+  const [cooldown, setCooldown] = useState(false);
   const playerRef               = useRef<PlayerRef>(null);
+  const eventSourceRef          = useRef<EventSource | null>(null);
+  const requestIdRef            = useRef<string | null>(null);
+
+  // Send cancel signal to backend (works even during page unload via sendBeacon)
+  const notifyBackendCancel = () => {
+    if (requestIdRef.current && API) {
+      try {
+        navigator.sendBeacon(`${API}/generate/cancel?request_id=${requestIdRef.current}`);
+      } catch {
+        // sendBeacon may not be available in all browsers
+      }
+    }
+  };
+
+  // Warn user when trying to leave during generation
+  useEffect(() => {
+    if (stage !== "loading") return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "A film is being generated. Are you sure you want to leave?";
+      return e.returnValue;
+    };
+
+    const handlePageHide = () => {
+      notifyBackendCancel();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("pagehide", handlePageHide);
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener("pagehide", handlePageHide);
+    };
+  }, [stage]);
+
+  // Clean up EventSource on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      notifyBackendCancel();
+    };
+  }, []);
+
+  const handleCancel = () => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    notifyBackendCancel();
+    requestIdRef.current = null;
+    setStage("input");
+    setProgress({ pct: 0, msg: "" });
+    setError("");
+  };
 
   const handleGenerate = async () => {
+    if (stage === "loading" || cooldown) return;
     const normalizedUrl = repoUrl.trim().toLowerCase();
     if (!normalizedUrl.includes("github.com")) { setError("Please enter a valid GitHub URL"); return; }
     if (!API) {
@@ -86,11 +146,16 @@ export default function App() {
         : "Could not reach the backend. Please make sure it is running and try again.";
       setError(message);
       setStage("error");
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 3000);
       return;
     }
 
-    const url = `${API}/generate/stream?repo_url=${encodeURIComponent(normalizedUrl)}&tone=${tone}`;
+    const requestId = crypto.randomUUID();
+    requestIdRef.current = requestId;
+    const url = `${API}/generate/stream?request_id=${requestId}&repo_url=${encodeURIComponent(normalizedUrl)}&tone=${tone}`;
     const es = new EventSource(url);
+    eventSourceRef.current = es;
     es.onmessage = (e) => {
       let data: Record<string, any>;
       try {
@@ -100,15 +165,22 @@ export default function App() {
         return;
       }
       if (data.stage === "done") {
-        setScript(data.data); setStage("preview"); es.close();
+        setScript(data.data); setStage("preview"); es.close(); eventSourceRef.current = null;
       }
-      else if (data.stage === "error") { setError(data.msg);   setStage("error");   es.close(); }
-      else                             { setProgress({ pct: data.pct, msg: data.msg }); }
+      else if (data.stage === "error") {
+        setError(data.msg); setStage("error"); es.close(); eventSourceRef.current = null;
+        setCooldown(true);
+        setTimeout(() => setCooldown(false), 3000);
+      }
+      else { setProgress({ pct: data.pct, msg: data.msg }); }
     };
     es.onerror = () => {
       setError("Connection lost while streaming the film. Please check the backend and try again.");
       setStage("error");
       es.close();
+      eventSourceRef.current = null;
+      setCooldown(true);
+      setTimeout(() => setCooldown(false), 3000);
     };
   };
 
@@ -169,13 +241,14 @@ export default function App() {
           ))}
         </div>
 
-        <button onClick={handleGenerate} style={{
+        <button onClick={handleGenerate} disabled={cooldown} style={{
           width: "100%", padding: "18px", fontSize: 16, fontWeight: 600,
-          background: ACCENT, border: "none", borderRadius: 14,
-          color: "#fff", cursor: "pointer", letterSpacing: 0.3,
+          background: cooldown ? "#555" : ACCENT, border: "none", borderRadius: 14,
+          color: "#fff", cursor: cooldown ? "not-allowed" : "pointer", letterSpacing: 0.3,
           boxShadow: `0 4px 20px ${ACCENT}40`,
+          opacity: cooldown ? 0.6 : 1,
         }}>
-          Generate Film
+          {cooldown ? "Please wait..." : "Generate Film"}
         </button>
         {error && <p style={{ marginTop: 16, color: "#EF4444", fontSize: 13 }}>{error}</p>}
       </div>
@@ -200,7 +273,15 @@ export default function App() {
             boxShadow: `0 0 16px ${ACCENT}99`,
           }} />
         </div>
-        <p style={{ fontSize: 13, color: "#333355", letterSpacing: 0.3 }}>{progress.msg}</p>
+        <p style={{ fontSize: 13, color: "#333355", letterSpacing: 0.3, marginBottom: 32 }}>{progress.msg}</p>
+        <button onClick={handleCancel} style={{
+          padding: "10px 28px", fontSize: 13, fontWeight: 500,
+          background: "transparent", border: `1px solid ${BORDER}`,
+          borderRadius: 10, color: "#888", cursor: "pointer",
+          fontFamily: "'Inter', sans-serif",
+        }}>
+          Cancel
+        </button>
       </div>
     </div>
   );

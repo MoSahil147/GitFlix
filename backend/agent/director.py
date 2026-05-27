@@ -1,4 +1,5 @@
 import json
+import threading
 from typing import Any
 
 from agent.llm_balancer import LLMLoadBalancer
@@ -10,6 +11,18 @@ from agent.tools import (
     get_commit_series,
 )
 from schemas import ScriptJSON, Scene, Character, Era, PlotTwist, HeroCommit
+
+
+class CancelledError(Exception):
+    """Raised when the generation is cancelled by the client."""
+    pass
+
+
+def _check_cancelled(cancel_event: threading.Event | None) -> None:
+    """Raise CancelledError if the cancel event is set."""
+    if cancel_event is not None and cancel_event.is_set():
+        raise CancelledError("Generation cancelled by client")
+
 
 # 7 scenes — id, title, duration in seconds, fallback narration
 # fallback is used if the LLM fails to generate narration
@@ -25,7 +38,11 @@ SCENE_TEMPLATES = {
 
 
 # narrate funnction + the tool calling
-def build_script(analytics: dict[str, Any], tone: str) -> ScriptJSON:
+def build_script(
+    analytics: dict[str, Any],
+    tone: str,
+    cancel_event: threading.Event | None = None,
+) -> ScriptJSON:
 
     # set up the LLM balancer — round-robins across llama models with fallback
     llm = LLMLoadBalancer(temperature=0.7)
@@ -51,14 +68,24 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
     # call all 5 tools to pull story data from analytics
     # we return as json strings because Langchain passes datas as strings not Python Objects
     contributors = json.loads(analyze_contributors.invoke(analytics_str))
+    _check_cancelled(cancel_event)
+
     plot_twist_raw = json.loads(detect_plot_twist.invoke(analytics_str))
+    _check_cancelled(cancel_event)
+
     hero_raw = json.loads(find_hero_commit.invoke(analytics_str))
+    _check_cancelled(cancel_event)
+
     ghost_files = json.loads(identify_ghost_files.invoke(analytics_str))
+    _check_cancelled(cancel_event)
+
     commit_series = json.loads(get_commit_series.invoke(analytics_str))
+    _check_cancelled(cancel_event)
 
     # narrate() sends context to the LLM and gets back 2-3 sentences
     # if LLM fails, it returns the fallback from SCENE_TEMPLATES # rulessss
     def narrate(scene_id: str, context: str, fallback: str) -> str:
+        _check_cancelled(cancel_event)
         prompt = (
             f"{SYSTEM_PROMPT}\n\nContext: {context}\n\n"
             "Write exactly 1 sentence of narration to be spoken aloud. Keep it under 20 words. Output ONLY that sentence.\n"
@@ -72,7 +99,11 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
             "- Sound like a human speaking, not an AI writing. Use contractions, natural rhythm."
         )
         try:
-            return llm.invoke(prompt).content.strip()
+            result = llm.invoke(prompt).content.strip()
+            _check_cancelled(cancel_event)
+            return result
+        except CancelledError:
+            raise
         except Exception:
             return fallback
 

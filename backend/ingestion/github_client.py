@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+import threading
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
 from typing import Callable, Optional
@@ -32,10 +33,12 @@ def fetch_repo_data(
     repo_url: str,
     max_commits: int = 100,
     on_progress: Optional[Callable[[int, str], None]] = None,
+    cancel_event: Optional[threading.Event] = None,
 ) -> RepoData:
     """
     Fetches repository data from GitHub.
     Optimized to reduce API calls and prevent timeouts.
+    Supports cancellation via cancel_event - when set, returns partial data immediately.
     """
     repo_url = _validate_repo_url(repo_url)
     token = os.getenv("GITHUB_TOKEN")
@@ -48,11 +51,15 @@ def fetch_repo_data(
     parts = repo_url.rstrip("/").split("github.com/")[-1].split("/")
     owner, repo_name = parts[0], parts[1]
     # we are getting the repo from here
+    if cancel_event and cancel_event.is_set():
+        raise RuntimeError("Cancelled before connecting")
     if on_progress:
         on_progress(5, f"Connecting to {owner}/{repo_name}...")
     repo = g.get_repo(f"{owner}/{repo_name}")
 
     # Step 1: Fetch commit list (lightweight)
+    if cancel_event and cancel_event.is_set():
+        raise RuntimeError("Cancelled before fetching commits")
     if on_progress:
         on_progress(10, "Fetching commit history...")
     commits_raw = []
@@ -84,6 +91,11 @@ def fetch_repo_data(
     idx = 0
     for commit in all_commits:
         if idx >= total_to_scan:
+            break
+
+        # Check cancellation every 10 commits to avoid unnecessary API calls
+        if cancel_event and cancel_event.is_set():
+            log.info("Ingestion cancelled after %d commits", idx)
             break
 
         author_login = commit.author.login if commit.author else "unknown"
@@ -162,7 +174,14 @@ def fetch_repo_data(
             pct = 15 + int((idx / total_to_scan) * 10)
             on_progress(pct, f"Fetched {idx}/{total_to_scan} commits...")
 
+    # If cancelled with no data, raise so the streaming endpoint catches it
+    if cancel_event and cancel_event.is_set() and not commits_raw:
+        raise RuntimeError("Cancelled during ingestion")
+
     # Step 2: Contributors
+    if cancel_event and cancel_event.is_set():
+        log.info("Ingestion cancelled before building contributor profiles")
+        raise RuntimeError("Cancelled during ingestion")
     if on_progress:
         on_progress(25, "Building contributor profiles...")
     contributors = [
@@ -181,6 +200,9 @@ def fetch_repo_data(
     contributors.sort(key=lambda x: x.total_commits, reverse=True)
 
     # Step 3: File Histories — derived from file_map built during the detailed commit loop
+    if cancel_event and cancel_event.is_set():
+        log.info("Ingestion cancelled before analyzing file activity")
+        raise RuntimeError("Cancelled during ingestion")
     if on_progress:
         on_progress(28, "Analyzing file activity...")
     ghost_cutoff = datetime.now(timezone.utc) - timedelta(days=180)
