@@ -28,7 +28,7 @@ GitFlix Architecture
   |on     | |          | |          |
   |       | |analyzer  | |director  |
   |github_| |.py       | |.py       |
-  |client | |          | |          |
+  |client | |          | |ScirptJSON|
   |.py    | | - chars  | | - LLM    |
   |       | | - hero   | |   calls  |
   | PyGit | |   commit | | - builds |
