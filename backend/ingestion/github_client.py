@@ -21,6 +21,11 @@ _GITHUB_URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/?$")
 
 def _validate_repo_url(url: str) -> str:
     url = url.strip().lower()
+    if not url.startswith("https://"):
+        if url.startswith("http://"):
+            url = "https://" + url[len("http://"):]
+        else:
+            url = "https://" + url
     if not _GITHUB_URL_RE.match(url):
         raise ValueError(
             f"Invalid GitHub repo URL: '{url}'. Must be https://github.com/owner/repo"
