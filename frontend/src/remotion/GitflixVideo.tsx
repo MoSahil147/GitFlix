@@ -9,7 +9,7 @@ import { S05GhostTowns } from "./scenes/S05GhostTowns";
 import { S06HeroCommit } from "./scenes/S06HeroCommit";
 import { S07FinalState } from "./scenes/S07FinalState";
 
-const FPS = 30;
+export const FPS = 30;
 
 // cinematic pacing — each scene has enough time to breathe and land
 export const SCENE_DURATIONS = {

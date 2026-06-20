@@ -15,8 +15,23 @@ load_dotenv()
 
 log = logging.getLogger("gitflix.ingestion")
 
-# bouncher alert
 _GITHUB_URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/?$")
+
+# Single Github client reused across all requests
+_gh_client: Github | None = None
+_gh_lock = threading.Lock()
+
+
+def _get_github_client() -> Github:
+    global _gh_client
+    if _gh_client is None:
+        with _gh_lock:
+            if _gh_client is None:
+                token = os.getenv("GITHUB_TOKEN")
+                if not token:
+                    log.warning("GITHUB_TOKEN not found. API rate limits will be very restrictive.")
+                _gh_client = Github(token)
+    return _gh_client
 
 
 def _validate_repo_url(url: str) -> str:
@@ -46,11 +61,7 @@ def fetch_repo_data(
     Supports cancellation via cancel_event - when set, returns partial data immediately.
     """
     repo_url = _validate_repo_url(repo_url)
-    token = os.getenv("GITHUB_TOKEN")
-    if not token:
-        log.warning("GITHUB_TOKEN not found. API rate limits will be very restrictive.")
-    # we are getting connecting here
-    g = Github(token)
+    g = _get_github_client()
 
     # url parsing, https://github.com/mosahil147/GitFlix,  -1 -> last part with us!
     parts = repo_url.rstrip("/").split("github.com/")[-1].split("/")

@@ -1,15 +1,8 @@
-import json
 import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 from agent.llm_balancer import LLMLoadBalancer
-from agent.tools import (
-    analyze_contributors,
-    detect_plot_twist,
-    find_hero_commit,
-    identify_ghost_files,
-    get_commit_series,
-)
 from schemas import ScriptJSON, Scene, Character, Era, PlotTwist, HeroCommit
 
 
@@ -19,40 +12,30 @@ class CancelledError(Exception):
 
 
 def _check_cancelled(cancel_event: threading.Event | None) -> None:
-    """Raise CancelledError if the cancel event is set."""
     if cancel_event is not None and cancel_event.is_set():
         raise CancelledError("Generation cancelled by client")
 
 
-# 7 scenes — id, title, duration in seconds, fallback narration
-# fallback is used if the LLM fails to generate narration
 SCENE_TEMPLATES = {
-    "S01": ("The origin", 8, "The story begins."),
-    "S02": ("The cast", 12, "Meet the people who built this."),
-    "S03": ("The rise", 20, "Watch the codebase come alive."),
-    "S04": ("The plot twist", 10, "Then everything changed."),
-    "S05": ("Ghost towns", 8, "Some ideas were left behind."),
-    "S06": ("The hero moment", 12, "One commit changed everything."),
+    "S01": ("The origin",           8,  "The story begins."),
+    "S02": ("The cast",             12, "Meet the people who built this."),
+    "S03": ("The rise",             20, "Watch the codebase come alive."),
+    "S04": ("The plot twist",       10, "Then everything changed."),
+    "S05": ("Ghost towns",          8,  "Some ideas were left behind."),
+    "S06": ("The hero moment",      12, "One commit changed everything."),
     "S07": ("The state of the world", 15, "This is what was built."),
 }
 
 
-# narrate funnction + the tool calling
 def build_script(
     analytics: dict[str, Any],
     tone: str,
     cancel_event: threading.Event | None = None,
 ) -> ScriptJSON:
 
-    # set up the LLM balancer — round-robins across llama models with fallback
     llm = LLMLoadBalancer(temperature=0.7)
-
-    # convert analytics dict to a JSON string so tools can read it
-    analytics_str = json.dumps(analytics)
     repo_name = analytics["repo_name"]
 
-    # this is the personality of the AI director
-    # tone changes how it writes — epic, documentary or casual
     SYSTEM_PROMPT = f"""You are a narrator for a cinematic documentary about a software project.
 Tone: {tone}
 Project: {repo_name}
@@ -65,25 +48,23 @@ Tone guide:
 
 Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real person talking."""
 
-    # call all 5 tools to pull story data from analytics
-    # we return as json strings because Langchain passes datas as strings not Python Objects
-    contributors = json.loads(analyze_contributors.invoke(analytics_str))
+    # Pull story data directly from analytics dict — no JSON round-trip
     _check_cancelled(cancel_event)
+    contributors = analytics.get("characters", [])
 
-    plot_twist_raw = json.loads(detect_plot_twist.invoke(analytics_str))
     _check_cancelled(cancel_event)
+    pt = analytics.get("plot_twist")
+    plot_twist_raw = {**pt, "found": True} if pt else {"found": False}
 
-    hero_raw = json.loads(find_hero_commit.invoke(analytics_str))
     _check_cancelled(cancel_event)
+    hero_raw = analytics.get("hero_commit", {})
 
-    ghost_files = json.loads(identify_ghost_files.invoke(analytics_str))
     _check_cancelled(cancel_event)
+    ghost_files = analytics.get("ghost_files", [])
 
-    commit_series = json.loads(get_commit_series.invoke(analytics_str))
     _check_cancelled(cancel_event)
+    commit_series = analytics.get("commit_series", [])
 
-    # narrate() sends context to the LLM and gets back 2-3 sentences
-    # if LLM fails, it returns the fallback from SCENE_TEMPLATES # rulessss
     def narrate(scene_id: str, context: str, fallback: str) -> str:
         _check_cancelled(cancel_event)
         prompt = (
@@ -107,23 +88,10 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
         except Exception:
             return fallback
 
-    # map each scene to the context it needs for narration
-    # dates are passed explicitly so the LLM uses the real values, not guesses
-    first_week = (
-        analytics["commit_series"][0]["week"][:4]
-        if analytics.get("commit_series")
-        else None
-    )  # just the year e.g. "2023"
-    latest_week = (
-        analytics["commit_series"][-1]["week"][:4]
-        if analytics.get("commit_series")
-        else None
-    )
-    twist_week = (
-        plot_twist_raw.get("week", "")[:4] if plot_twist_raw.get("week") else None
-    )  # year only
+    first_week  = analytics["commit_series"][0]["week"][:4]  if analytics.get("commit_series") else None
+    latest_week = analytics["commit_series"][-1]["week"][:4] if analytics.get("commit_series") else None
+    twist_week  = plot_twist_raw.get("week", "")[:4] if plot_twist_raw.get("week") else None
 
-    # this is where the datas fed
     context_map = {
         "S01": f"Repository '{repo_name}' started by {contributors[0]['login'] if contributors else 'unknown'}{f' in {first_week}' if first_week else ''}. {analytics['total_commits']} total commits.",
         "S02": f"Top contributors: {[c['login'] for c in contributors[:3]]}. {analytics['contributor_count']} total contributors.",
@@ -132,64 +100,73 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
         "S05": f"Ghost files not touched in 180+ days: {ghost_files[:5]}",
         "S06": f"Biggest single commit: '{hero_raw.get('message', '')}' by {hero_raw.get('author_login', '')}. Changed {hero_raw.get('lines_changed', 0)} lines.",
         "S07": f"Final state{f' as of {latest_week}' if latest_week else ''}: {analytics['total_commits']} commits, {analytics['contributor_count']} contributors, primary language: {analytics.get('primary_language', 'unknown')}.",
+        "plot_twist": str(plot_twist_raw),
+        "hero":       str(hero_raw),
     }
 
-    # build all 7 scenes
+    # Build all narrations in parallel — cuts agent phase from ~20s to ~3s
+    narration_tasks = {
+        scene_id: (context_map[scene_id], fallback)
+        for scene_id, (_, _, fallback) in SCENE_TEMPLATES.items()
+    }
+    if plot_twist_raw.get("found"):
+        narration_tasks["plot_twist"] = (context_map["plot_twist"], "Then everything changed.")
+    narration_tasks["hero"] = (context_map["hero"], "One commit changed everything.")
+
+    narrations: dict[str, str] = {}
+    with ThreadPoolExecutor(max_workers=len(narration_tasks)) as executor:
+        future_to_key = {
+            executor.submit(narrate, key, ctx, fallback): key
+            for key, (ctx, fallback) in narration_tasks.items()
+        }
+        for future in as_completed(future_to_key):
+            key = future_to_key[future]
+            _, fallback = narration_tasks[key]
+            try:
+                narrations[key] = future.result()
+            except CancelledError:
+                raise
+            except Exception:
+                narrations[key] = fallback
+
+    # Build scenes
     scenes = []
     for scene_id, (title, duration, fallback) in SCENE_TEMPLATES.items():
-        # generate narration for this scene using the LLM
-        narration = narrate(scene_id, context_map[scene_id], fallback)
-
-        # some scenes need extra data for the visuals
         visual_params = {}
         if scene_id == "S03":
-            # rise scene needs the full commit chart data
-            visual_params = {
-                "commit_series": commit_series,
-                "eras": analytics.get("eras", []),
-            }
+            visual_params = {"commit_series": commit_series, "eras": analytics.get("eras", [])}
         elif scene_id == "S06":
-            # hero scene needs the hero commit details
             visual_params = {"hero": hero_raw}
 
-        scenes.append(
-            Scene(
-                scene_id=scene_id,
-                title=title,
-                duration_secs=duration,
-                narration_text=narration,
-                visual_params=visual_params,
-            )
-        )
+        scenes.append(Scene(
+            scene_id=scene_id,
+            title=title,
+            duration_secs=duration,
+            narration_text=narrations.get(scene_id, fallback),
+            visual_params=visual_params,
+        ))
 
-    # build character objects from the contributors data
-    # ** means unpack this dictionary into keyword arguments.
     characters = [Character(**c) for c in contributors[:6]]
 
-    # build plot twist object if one was found
     plot_twist = None
     if plot_twist_raw.get("found"):
-        pt_narration = narrate("S04", str(plot_twist_raw), "Then everything changed.")
         plot_twist = PlotTwist(
             week=plot_twist_raw.get("week", ""),
             commit_count=plot_twist_raw.get("commit_count", 0),
             twist_type=plot_twist_raw.get("type", "spike"),
-            narration_text=pt_narration,
+            narration_text=narrations.get("plot_twist", "Then everything changed."),
         )
 
-    # build hero commit object
-    hero_narration = narrate("S06", str(hero_raw), "One commit changed everything.")
     hero_commit = HeroCommit(
         sha=hero_raw.get("sha", ""),
         author_login=hero_raw.get("author_login", ""),
         message=hero_raw.get("message", ""),
         lines_changed=hero_raw.get("lines_changed", 0),
         timestamp=hero_raw.get("timestamp", ""),
-        narration_text=hero_narration,
+        narration_text=narrations.get("hero", "One commit changed everything."),
         diff_excerpt=hero_raw.get("diff_excerpt"),
     )
 
-    # package everything into ScriptJSON and return
     return ScriptJSON(
         repo_name=analytics["repo_name"],
         description=analytics.get("description"),

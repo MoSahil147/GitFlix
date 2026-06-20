@@ -34,7 +34,7 @@ export const S07FinalState: React.FC<{
         {script.repo_name}
       </div>
 
-      <div style={{ opacity: taglineOpacity, fontSize: 18, color: "#28284a", fontStyle: "italic", marginTop: 24, marginBottom: 68 }}>
+      <div style={{ opacity: taglineOpacity, fontSize: 18, color: "#9d8bc4", fontStyle: "italic", marginTop: 24, marginBottom: 68 }}>
         Every repository has a story.
       </div>
 
@@ -46,7 +46,7 @@ export const S07FinalState: React.FC<{
           return (
             <div key={stat.label} style={{ opacity: op, transform: `translateY(${y}px)`, textAlign: "center" }}>
               <div style={{ fontSize: 56, fontWeight: 800, color: "#8B5CF6", lineHeight: 1 }}>{stat.value}</div>
-              <div style={{ fontSize: 11, color: "#22224a", textTransform: "uppercase", letterSpacing: 3, marginTop: 10 }}>
+              <div style={{ fontSize: 11, color: "#7b6aaa", textTransform: "uppercase", letterSpacing: 3, marginTop: 10 }}>
                 {stat.label}
               </div>
             </div>
