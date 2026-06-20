@@ -170,11 +170,12 @@ async def generate_stream(
     log.info("[stream %s] cancel handler registered", req_id)
 
     async def event_stream():
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         try:
-            if _CONFIG_STATUS["missing_required"]:
-                missing = ", ".join(_CONFIG_STATUS["missing_required"])
+            config_status = _build_config_status()
+            if config_status["missing_required"]:
+                missing = ", ".join(config_status["missing_required"])
                 yield f"data: {json.dumps({'stage': 'error', 'msg': f'Backend is missing required environment variables: {missing}'})}\n\n"
                 return
 
@@ -193,8 +194,7 @@ async def generate_stream(
             def worker() -> None:
                 try:
                     data = fetch_repo_data(repo_url, on_progress=progress_cb, cancel_event=cancel_event)
-                    if not cancel_event.is_set():
-                        loop.call_soon_threadsafe(q.put_nowait, {"type": "result", "data": data})
+                    loop.call_soon_threadsafe(q.put_nowait, {"type": "result", "data": data})
                 except Exception as e:
                     if not cancel_event.is_set():
                         loop.call_soon_threadsafe(q.put_nowait, {"type": "error", "msg": str(e)})
@@ -301,8 +301,9 @@ async def cancel_generation(request_id: str):
 
 @app.get("/status")
 async def health():
+    status = _build_config_status()
     return {
-        "status": "ok" if _CONFIG_STATUS["ok"] else "degraded",
-        "missing_required": _CONFIG_STATUS["missing_required"],
-        "warnings": _CONFIG_STATUS["warnings"],
+        "status": "ok" if status["ok"] else "degraded",
+        "missing_required": status["missing_required"],
+        "warnings": status["warnings"],
     }
