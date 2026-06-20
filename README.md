@@ -70,9 +70,8 @@ cd gitflix
 
 ```bash
 cd backend
-uv venv
+uv sync
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
-uv pip install -r requirements.txt
 ```
 
 Create a `.env` file in the `backend/` directory:
@@ -109,7 +108,9 @@ Start the dev server:
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open `http://localhost:6767` in your browser.
+
+> **Note:** If port 6767 is occupied (macOS reserves it for a system process on some machines), Vite will automatically move to 6768. Check the terminal output for the exact URL.
 
 ---
 
@@ -117,8 +118,8 @@ Open `http://localhost:5173` in your browser.
 
 1. Enter a public GitHub repository URL, e.g. `https://github.com/MoSahil147/GitFlix`
 2. Select a tone — **Epic**, **Documentary**, or **Casual**
-3. Click **Generate Film**
-4. Watch the progress bar as the backend fetches data, runs analytics, and writes the script
+3. Click **Generate →**
+4. Watch the stage progress as the backend fetches data, runs analytics, and writes the script (~60 seconds)
 5. The film plays automatically once ready — use the chapter strip below the player to jump between scenes
 
 ---
@@ -128,7 +129,6 @@ Open `http://localhost:5173` in your browser.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `GET` | `/generate/stream` | Streams SSE progress events, then delivers the full script on completion |
-| `POST` | `/generate` | Runs the full pipeline and returns the script as JSON (no streaming) |
 | `POST` | `/generate/cancel` | Cancels an in-progress generation |
 | `GET` | `/status` | Health check — returns `ok` or `degraded` with missing config details |
 
@@ -153,10 +153,10 @@ gitflix/
 │   ├── ingestion/          # GitHub API client — fetches commits, contributors, file history
 │   ├── analytics/          # Derives eras, ghost files, hero commit, plot twist
 │   ├── agent/
-│   │   ├── director.py     # Orchestrates LLM narration across all 7 scenes
-│   │   └── tools.py        # LangChain tools: contributors, plot twist, hero commit, etc.
+│   │   ├── director.py     # Orchestrates parallel LLM narration across all 7 scenes
+│   │   └── llm_balancer.py # Round-robin load balancer across Groq models
 │   ├── schemas.py          # Pydantic models: ScriptJSON, Scene, Character, HeroCommit, …
-│   └── main.py             # FastAPI app, SSE stream endpoint
+│   └── main.py             # FastAPI app, SSE stream endpoint, rate limiter, cache
 │
 └── frontend/
     └── src/
@@ -164,7 +164,14 @@ gitflix/
         │   ├── GitflixVideo.tsx    # Root composition — sequences all 7 scenes with music
         │   ├── Subtitle.tsx        # Animated subtitle component
         │   └── scenes/             # S01–S07 individual scene components
-        ├── App.tsx                 # Landing page, loading screen, and player shell
+        ├── screens/
+        │   ├── InputScreen.tsx     # Landing page — URL input, tone picker, stats
+        │   ├── LoadingScreen.tsx   # Generation progress with stage indicators
+        │   ├── PreviewScreen.tsx   # Player, chapter strip, export button
+        │   └── ErrorScreen.tsx     # Error state with retry
+        ├── components/
+        │   └── NavBar.tsx          # Shared sticky nav with violet accent bar
+        ├── App.tsx                 # State machine — routes between the four screens
         └── main.tsx
 ```
 
