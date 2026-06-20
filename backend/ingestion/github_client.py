@@ -19,15 +19,18 @@ _GITHUB_URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/?$")
 
 # Single Github client reused across all requests
 _gh_client: Github | None = None
+_gh_lock = threading.Lock()
 
 
 def _get_github_client() -> Github:
     global _gh_client
     if _gh_client is None:
-        token = os.getenv("GITHUB_TOKEN")
-        if not token:
-            log.warning("GITHUB_TOKEN not found. API rate limits will be very restrictive.")
-        _gh_client = Github(token)
+        with _gh_lock:
+            if _gh_client is None:
+                token = os.getenv("GITHUB_TOKEN")
+                if not token:
+                    log.warning("GITHUB_TOKEN not found. API rate limits will be very restrictive.")
+                _gh_client = Github(token)
     return _gh_client
 
 
