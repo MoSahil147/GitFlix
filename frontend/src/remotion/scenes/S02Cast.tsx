@@ -21,7 +21,7 @@ export const S02Cast: React.FC<{
   return (
     <div style={{
       width: "100%", height: "100%",
-      background: "radial-gradient(ellipse at 50% 40%, #0f0f20 0%, #050508 70%)",
+      background: "radial-gradient(ellipse at 50% 40%, #12100a 0%, #050508 70%)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif", gap: 36,
@@ -29,7 +29,7 @@ export const S02Cast: React.FC<{
     }}>
       <div style={{
         opacity: headerOpacity,
-        fontSize: 13, color: "#8B5CF6",
+        fontSize: 13, color: "#d4a843",
         letterSpacing: 5, textTransform: "uppercase",
       }}>
         The Cast
@@ -83,7 +83,7 @@ export const S02Cast: React.FC<{
                 <div style={{ fontSize: 12, color: char.color, textTransform: "uppercase", letterSpacing: 2, marginBottom: 12 }}>
                   {ROLE_LABELS[char.role]}
                 </div>
-                <div style={{ fontSize: 14, color: "#9090b8", lineHeight: 1.6 }}>
+                <div style={{ fontSize: 14, color: "#8a7a60", lineHeight: 1.6 }}>
                   {char.arc_summary}
                 </div>
               </div>

@@ -28,7 +28,7 @@ export const S04PlotTwist: React.FC<{
       const drop = commitSeries[i - 1].count - commitSeries[i].count;
       if (drop > maxDrop) { maxDrop = drop; twistIdx = i; }
     }
-    twistWeek = commitSeries[twistIdx]?.week ? formatWeek(commitSeries[twistIdx].week) : "—";
+    twistWeek = commitSeries[twistIdx]?.week ? formatWeek(commitSeries[twistIdx].week) : "N/A";
     dropAmt   = Math.max(maxDrop, 0);
   }
 

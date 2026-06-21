@@ -3,7 +3,7 @@ import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import type { Character } from "../types";
 import { Subtitle } from "../Subtitle";
 
-const COLORS = ["#8B5CF6", "#5DCAA5", "#EF9F27", "#e05a5a", "#5566aa"];
+const COLORS = ["#d4a843", "#5DCAA5", "#e05a5a", "#5566aa", "#a08060"];
 
 function polar(cx: number, cy: number, r: number, deg: number): [number, number] {
   const rad = ((deg - 90) * Math.PI) / 180;
@@ -50,7 +50,7 @@ export const S03Rise: React.FC<{
   return (
     <div style={{
       width: "100%", height: "100%",
-      background: "radial-gradient(ellipse at 40% 50%, #0d0a1a 0%, #050508 70%)",
+      background: "radial-gradient(ellipse at 40% 50%, #0d0b07 0%, #050508 70%)",
       display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif", position: "relative",
       gap: 80,
@@ -58,7 +58,7 @@ export const S03Rise: React.FC<{
 
       {/* legend */}
       <div style={{ opacity: titleOpacity }}>
-        <div style={{ fontSize: 14, color: "#8B5CF6", letterSpacing: 5, textTransform: "uppercase", marginBottom: 32 }}>
+        <div style={{ fontSize: 14, color: "#d4a843", letterSpacing: 5, textTransform: "uppercase", marginBottom: 32 }}>
           Commit Share
         </div>
         {slices.map(({ c, pct, color }, i) => {

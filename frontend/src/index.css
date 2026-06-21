@@ -43,3 +43,12 @@ input { font-family: var(--font-body); }
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
+
+@keyframes stage-pulse {
+  0%, 100% { box-shadow: 0 0 6px 1px #d4a84388; opacity: 1; }
+  50%       { box-shadow: 0 0 18px 4px #d4a843cc; opacity: 0.7; }
+}
+
+.stage-dot-active {
+  animation: stage-pulse 1.2s ease-in-out infinite;
+}

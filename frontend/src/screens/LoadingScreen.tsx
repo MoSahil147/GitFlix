@@ -40,13 +40,15 @@ export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
             const status = stageStatus(stage.pct, progress.pct);
             return (
               <div key={stage.key} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{
-                  width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
-                  background: status === "pending" ? "transparent" : "var(--accent)",
-                  border: status === "pending" ? "1px solid var(--border-dim)" : "none",
-                  boxShadow: status === "active" ? "0 0 10px var(--accent)" : "none",
-                  opacity: status === "active" ? 1 : status === "done" ? 0.6 : 0.3,
-                }} />
+                <div
+                  className={status === "active" ? "stage-dot-active" : undefined}
+                  style={{
+                    width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
+                    background: status === "pending" ? "transparent" : "var(--accent)",
+                    border: status === "pending" ? "1px solid var(--border-dim)" : "none",
+                    opacity: status === "done" ? 0.5 : 1,
+                  }}
+                />
                 <span style={{
                   fontSize: 13,
                   color: status === "active" ? "var(--text-active)" : status === "done" ? "var(--text-mid)" : "var(--text-muted)",

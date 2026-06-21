@@ -19,7 +19,7 @@ export const S01Origin: React.FC<{
   return (
     <div style={{
       width: "100%", height: "100%",
-      background: "radial-gradient(ellipse at 50% 40%, #12122a 0%, #050508 70%)",
+      background: "radial-gradient(ellipse at 50% 40%, #141008 0%, #050508 70%)",
       display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       fontFamily: "sans-serif",
@@ -28,11 +28,11 @@ export const S01Origin: React.FC<{
       {/* origin dot */}
       <div style={{
         width: 14, height: 14, borderRadius: "50%",
-        background: "#8B5CF6",
+        background: "#d4a843",
         opacity: dotOpacity,
         transform: `scale(${dotScale})`,
         marginBottom: 52,
-        boxShadow: "0 0 48px #8B5CF6bb",
+        boxShadow: "0 0 48px #d4a843bb",
       }} />
 
       {/* repo name */}
@@ -41,19 +41,19 @@ export const S01Origin: React.FC<{
         opacity: titleOpacity,
         transform: `translateY(${titleY}px)`,
         letterSpacing: -3, marginBottom: 40,
-        textShadow: "0 0 60px #8B5CF644",
+        textShadow: "0 0 60px #d4a84344",
       }}>
         {repoName}
       </div>
 
       {/* first contributor */}
       <div style={{
-        fontSize: 26, color: "#333355",
+        fontSize: 26, color: "#6a5e44",
         opacity: subtitleOpacity,
         transform: `translateY(${subtitleY}px)`,
       }}>
         started by{" "}
-        <span style={{ color: "#8B5CF6", fontWeight: 600 }}>{firstContributor}</span>
+        <span style={{ color: "#d4a843", fontWeight: 600 }}>{firstContributor}</span>
       </div>
 
       <Subtitle text={narration} startFrame={100} />

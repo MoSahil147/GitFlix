@@ -38,10 +38,10 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
         }
         actions={
           <>
-            <button onClick={onNewFilm} style={{ fontSize: 12, color: "var(--text-mid)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
+            <button onClick={onNewFilm} style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
               ← New Film
             </button>
-            <button onClick={onExport} style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: "var(--accent)", border: "none", padding: "8px 18px", borderRadius: 6, cursor: "pointer" }}>
+            <button onClick={onExport} style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: "var(--accent)", border: "none", padding: "8px 18px", borderRadius: 6, cursor: "not-allowed", opacity: 0.5 }} title="Export coming soon">
               Export MP4
             </button>
           </>
@@ -63,14 +63,14 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
       </div>
 
       <div style={{ borderTop: "1px solid var(--border)", padding: "14px 48px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", background: "var(--bg)" }}>
-        <span style={{ fontSize: 9, color: "var(--border-dim)", textTransform: "uppercase", letterSpacing: 3, marginRight: 8 }}>Chapters</span>
+        <span style={{ fontSize: 10, color: "var(--text-mid)", textTransform: "uppercase", letterSpacing: 3, marginRight: 8 }}>Chapters</span>
         {CHAPTERS.map(ch => (
           <button
             key={ch.id}
             onClick={() => playerRef.current?.seekTo(chapterFrames[ch.id])}
-            style={{ fontSize: 11, color: "var(--text-muted)", border: "1px solid var(--border)", padding: "5px 14px", borderRadius: 4, background: "transparent", letterSpacing: 0.2, cursor: "pointer" }}
+            style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "5px 14px", borderRadius: 4, background: "transparent", letterSpacing: 0.2, cursor: "pointer" }}
             onMouseEnter={e => { (e.currentTarget.style.borderColor = "var(--accent)"); (e.currentTarget.style.color = "var(--text-active)"); }}
-            onMouseLeave={e => { (e.currentTarget.style.borderColor = "var(--border)"); (e.currentTarget.style.color = "var(--text-muted)"); }}
+            onMouseLeave={e => { (e.currentTarget.style.borderColor = "var(--border-dim)"); (e.currentTarget.style.color = "var(--text-muted)"); }}
           >
             {ch.label}
           </button>
