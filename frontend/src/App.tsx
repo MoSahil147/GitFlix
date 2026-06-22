@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { PlayerRef } from "@remotion/player";
-import { SCENE_DURATIONS, FPS } from "./remotion/GitflixVideo";
+import { SCENE_DURATIONS, FPS } from "./remotion/constants";
 import type { ScriptJSON } from "./remotion/types";
 import InputScreen   from "./screens/InputScreen";
 import LoadingScreen from "./screens/LoadingScreen";
@@ -140,10 +140,15 @@ export default function App() {
     const url = `${API}/generate/stream?request_id=${requestId}&repo_url=${encodeURIComponent(normalizedUrl)}&tone=${tone}`;
     const es = new EventSource(url);
     eventSourceRef.current = es;
+    type SSEEvent =
+      | { stage: "done"; pct: number; data: ScriptJSON }
+      | { stage: "error"; msg: string }
+      | { stage: "ingestion" | "analytics" | "agent"; pct: number; msg: string };
+
     es.onmessage = (e) => {
-      let data: Record<string, any>;
+      let data: SSEEvent;
       try {
-        data = JSON.parse(e.data);
+        data = JSON.parse(e.data) as SSEEvent;
       } catch {
         console.error("[GitFlix] malformed SSE message:", e.data);
         return;

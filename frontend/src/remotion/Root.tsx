@@ -1,5 +1,6 @@
 import { Composition } from "remotion";
 import { GitflixVideo } from "./GitflixVideo";
+import { FPS, SCENE_DURATIONS } from "./constants";
 import type { ScriptJSON } from "./types";
 
 // sample data used for testing in Remotion Studio
@@ -46,8 +47,7 @@ const SAMPLE_SCRIPT: ScriptJSON = {
   primary_language: "Python",
 };
 
-const FPS = 30;
-const TOTAL_SECS = 85;
+const TOTAL_SECS = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0);
 
 // this registers the composition with Remotion
 // Remotion needs to know the fps, dimensions and total length

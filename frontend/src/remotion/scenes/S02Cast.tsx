@@ -10,6 +10,9 @@ const ROLE_LABELS = {
   consistent: "The Backbone",
 };
 
+const hexAlpha = (opacity: number): string =>
+  Math.round(opacity * 255).toString(16).padStart(2, "0");
+
 export const S02Cast: React.FC<{
   characters: Character[];
   narration: string;
@@ -51,17 +54,16 @@ export const S02Cast: React.FC<{
               opacity, transform: `translateY(${y}px)`,
               position: "relative",
               background: "#0d0d18",
-              border: `1px solid ${char.color}${Math.round(borderFlicker * 255).toString(16).padStart(2, "0")}`,
+              border: `1px solid ${char.color}${hexAlpha(borderFlicker)}`,
               borderRadius: 20, padding: "36px 36px", width: 300, textAlign: "center",
-              boxShadow: `0 0 ${40 + 30 * flicker}px ${char.color}${Math.round(flicker * 0.3 * 255).toString(16).padStart(2, "0")}`,
+              boxShadow: `0 0 ${40 + 30 * flicker}px ${char.color}${hexAlpha(flicker * 0.3)}`,
             }}>
-              {/* flickering light bloom behind the card */}
               <div style={{
                 position: "absolute", top: "-40%", left: "50%",
                 transform: "translateX(-50%)",
                 width: 340, height: 340,
                 borderRadius: "50%",
-                background: `radial-gradient(circle, ${char.color}${Math.round(flicker * 0.22 * 255).toString(16).padStart(2, "0")} 0%, transparent 70%)`,
+                background: `radial-gradient(circle, ${char.color}${hexAlpha(flicker * 0.22)} 0%, transparent 70%)`,
                 pointerEvents: "none", zIndex: 0,
               }} />
 

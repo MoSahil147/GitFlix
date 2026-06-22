@@ -2,14 +2,17 @@
   --bg:           #050308;
   --surface:      #0a0810;
   --border:       #1a1510;
-  --border-dim:   #2e2518;
+  --border-dim:   #5a4828;
   --accent:       #d4a843;
   --accent-glow:  #d4a84340;
   --accent-dim:   #d4a84315;
   --text:         #ffffff;
-  --text-muted:   #8a7a60;
-  --text-mid:     #5e5040;
+  --text-muted:   #c4aa72;
+  --text-mid:     #8a7258;
   --text-active:  #f0d280;
+  --cancel:       #c45a5a;
+  --cancel-dim:   #6e2e2e;
+  --cancel-bg:    rgba(160, 50, 50, 0.07);
   --font-display: 'Space Grotesk', sans-serif;
   --font-body:    'Inter', sans-serif;
 }
@@ -29,7 +32,7 @@ body {
 button {
   font-family: var(--font-body);
   cursor: pointer;
-  transition: opacity 0.12s ease, transform 0.1s ease, border-color 0.12s ease, color 0.12s ease;
+  transition: opacity 0.12s ease, transform 0.1s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 button:active { transform: scale(0.97); }
 
