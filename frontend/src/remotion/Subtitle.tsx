@@ -6,7 +6,8 @@ interface Props {
   startFrame?: number;
 }
 
-const FPS = 30;
+import { FPS } from "./constants";
+
 const MIN_SECONDS_PER_LINE = 4; // never faster than 4 seconds per sentence
 
 export const Subtitle: React.FC<Props> = ({ text, startFrame = 20 }) => {

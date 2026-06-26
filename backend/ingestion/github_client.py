@@ -18,7 +18,7 @@ log = logging.getLogger("gitflix.ingestion")
 _GITHUB_URL_RE = re.compile(r"^https://github\.com/[\w.-]+/[\w.-]+/?$")
 
 # Single Github client reused across all requests
-_gh_client: Github | None = None
+_gh_client: Optional[Github] = None
 _gh_lock = threading.Lock()
 
 
@@ -29,21 +29,20 @@ def _get_github_client() -> Github:
             if _gh_client is None:
                 token = os.getenv("GITHUB_TOKEN")
                 if not token:
-                    log.warning("GITHUB_TOKEN not found. API rate limits will be very restrictive.")
+                    log.warning("GITHUB_TOKEN not set — API rate limits will apply.")
                 _gh_client = Github(token)
     return _gh_client
 
 
 def _validate_repo_url(url: str) -> str:
     url = url.strip().lower()
-    if not url.startswith("https://"):
-        if url.startswith("http://"):
-            url = "https://" + url[len("http://"):]
-        else:
-            url = "https://" + url
+    if url.startswith("http://"):
+        url = "https://" + url[len("http://"):]
+    elif not url.startswith("https://"):
+        url = "https://" + url
     if not _GITHUB_URL_RE.match(url):
         raise ValueError(
-            f"Invalid GitHub repo URL: '{url}'. Must be https://github.com/owner/repo"
+            f"Invalid GitHub repo URL: '{url}'. Expected https://github.com/owner/repo"
         )
     return url.rstrip("/")
 
@@ -78,33 +77,30 @@ def fetch_repo_data(
         raise RuntimeError("Cancelled before fetching commits")
     if on_progress:
         on_progress(10, "Fetching commit history...")
-    commits_raw = []
 
     # We fetch more commits but only get details for the first 'max_commits'
     # This allows us to get broad contributor stats without hitting too many API endpoints
     all_commits = repo.get_commits()
-
-    # (Clever) Limit to 300 for general stats, but only 100 for detailed file/line info
+    # Scan up to 300 commits for contributor stats; fetch full diff data only for the first max_commits.
     total_to_scan = min(300, all_commits.totalCount)
-
-    detailed_limit = max_commits  # 100 in the case, have defined above
 
     # better tracking, the Scoreboard
     # default dict is crazyy, as normal dict would crash on missing key, but this guy will create a blank entry!
-    contrib_map = defaultdict(
+    contrib_map: dict[str, dict] = defaultdict(
         lambda: {"commits": 0, "lines": 0, "first": None, "last": None, "months": set()}
     )
 
     # per-file tracking — built from files we already fetch in the detailed loop, zero extra API calls
-    def _file_entry():
-        return {"first": None, "last": None, "count": 0, "authors": set()}
-
-    file_map: dict[str, dict] = defaultdict(_file_entry)
+    file_map: dict[str, dict] = defaultdict(
+        lambda: {"first": None, "last": None, "count": 0, "authors": set()}
+    )
 
     if on_progress:
         on_progress(15, f"Analyzing {total_to_scan} commits...")
 
+    commits_raw: list[CommitData] = []
     idx = 0
+
     for commit in all_commits:
         if idx >= total_to_scan:
             break
@@ -118,11 +114,10 @@ def fetch_repo_data(
         timestamp = commit.commit.author.date
 
         # Detailed info for the first 'detailed_limit' commits
-        if idx < detailed_limit:
+        if idx < max_commits:
             try:
                 # This triggers API calls for files and stats
                 file_list = list(commit.files) if commit.files else []
-                files_changed = len(file_list)
                 lines_added = commit.stats.additions if commit.stats else 0
                 lines_deleted = commit.stats.deletions if commit.stats else 0
 
@@ -130,8 +125,7 @@ def fetch_repo_data(
                 diff_excerpt = None
                 for f in file_list:
                     if getattr(f, "patch", None):
-                        lines = f.patch.splitlines()[:8]
-                        diff_excerpt = "\n".join(lines)
+                        diff_excerpt = "\n".join(f.patch.splitlines()[:8])
                         break
 
                 # Track per-file last/first touched using timestamps we already have
@@ -144,36 +138,31 @@ def fetch_repo_data(
                     if not fm["last"] or timestamp > fm["last"]:
                         fm["last"] = timestamp
 
-                commits_raw.append(
-                    CommitData(
-                        sha=commit.sha[:8],
-                        author_login=author_login,
-                        timestamp=timestamp,
-                        message=commit.commit.message[:200],
-                        files_changed=files_changed,
-                        lines_added=lines_added,
-                        lines_deleted=lines_deleted,
-                        diff_excerpt=diff_excerpt,
-                    )
-                )
-
-                # Update line stats for contributors, for better tracking
+                commits_raw.append(CommitData(
+                    sha=commit.sha[:8],
+                    author_login=author_login,
+                    timestamp=timestamp,
+                    message=commit.commit.message[:200],
+                    files_changed=len(file_list),
+                    lines_added=lines_added,
+                    lines_deleted=lines_deleted,
+                    diff_excerpt=diff_excerpt,
+                ))
                 contrib_map[author_login]["lines"] += lines_added + lines_deleted
 
             except Exception as e:
-                log.error(f"Error fetching detailed commit {commit.sha[:8]}: {e}")
+                log.error("Error fetching detailed commit %s: %s", commit.sha[:8], e)
+
                 # Fallback to basic data
-                commits_raw.append(
-                    CommitData(
-                        sha=commit.sha[:8],
-                        author_login=author_login,
-                        timestamp=timestamp,
-                        message=commit.commit.message[:200],
-                        files_changed=0,
-                        lines_added=0,
-                        lines_deleted=0,
-                    )
-                )
+                commits_raw.append(CommitData(
+                    sha=commit.sha[:8],
+                    author_login=author_login,
+                    timestamp=timestamp,
+                    message=commit.commit.message[:200],
+                    files_changed=0,
+                    lines_added=0,
+                    lines_deleted=0,
+                ))
 
         # General stats for all scanned commits
         # first to detct late joiners, last to detect ghosts!
@@ -200,6 +189,7 @@ def fetch_repo_data(
         raise RuntimeError("Cancelled during ingestion")
     if on_progress:
         on_progress(25, "Building contributor profiles...")
+
     contributors = [
         ContributorStats(
             login=login,
@@ -215,36 +205,28 @@ def fetch_repo_data(
     ]
     contributors.sort(key=lambda x: x.total_commits, reverse=True)
 
-    # Step 3: File Histories — derived from file_map built during the detailed commit loop
+    # Step 3: File Histories - derived from file_map built during the detailed commit loop
     if cancel_event and cancel_event.is_set():
         log.info("Ingestion cancelled before analyzing file activity")
         raise RuntimeError("Cancelled during ingestion")
     if on_progress:
         on_progress(28, "Analyzing file activity...")
+
     ghost_cutoff = datetime.now(timezone.utc) - timedelta(days=180)
     file_histories = []
     for path, fm in file_map.items():
         if not fm["first"] or not fm["last"]:
             continue
-        last_modified = (
-            fm["last"] if fm["last"].tzinfo else fm["last"].replace(tzinfo=timezone.utc)
-        )
-        first_seen = (
-            fm["first"]
-            if fm["first"].tzinfo
-            else fm["first"].replace(tzinfo=timezone.utc)
-        )
-        is_ghost = last_modified < ghost_cutoff
-        file_histories.append(
-            FileHistory(
-                path=path,
-                created=first_seen,
-                last_modified=last_modified,
-                total_modifications=fm["count"],
-                authors=list(fm["authors"]),
-                is_ghost=is_ghost,
-            )
-        )
+        last_modified = fm["last"] if fm["last"].tzinfo else fm["last"].replace(tzinfo=timezone.utc)
+        first_seen = fm["first"] if fm["first"].tzinfo else fm["first"].replace(tzinfo=timezone.utc)
+        file_histories.append(FileHistory(
+            path=path,
+            created=first_seen,
+            last_modified=last_modified,
+            total_modifications=fm["count"],
+            authors=list(fm["authors"]),
+            is_ghost=last_modified < ghost_cutoff,
+        ))
 
     if on_progress:
         on_progress(30, "Finalizing repository data...")

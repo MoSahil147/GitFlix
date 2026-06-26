@@ -31,7 +31,7 @@ export interface Scene {
   title: string;
   duration_secs: number;
   narration_text: string;
-  visual_params: Record<string, any>;
+  visual_params: Record<string, unknown>;
   audio_url?: string; // base64 data URI from ElevenLabs TTS
 }
 

@@ -1,7 +1,8 @@
 import React from "react";
 import { Player } from "@remotion/player";
 import type { PlayerRef } from "@remotion/player";
-import { GitflixVideo, FPS } from "../remotion/GitflixVideo";
+import { GitflixVideo } from "../remotion/GitflixVideo";
+import { FPS } from "../remotion/constants";
 import type { ScriptJSON } from "../remotion/types";
 import NavBar from "../components/NavBar";
 const CHAPTERS = [

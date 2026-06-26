@@ -1,8 +1,9 @@
 from datetime import datetime, timezone
-from schemas import RepoData
 from typing import Any
 
 import pandas as pd
+
+from schemas import RepoData
 
 # Colours assigned to each contributor in the film — used in S02 (The Cast) and S03 (The Rise)
 # Each contributor gets one colour, cycling if there are more than 8
@@ -21,10 +22,10 @@ CONTRIBUTOR_COLORS = [
 def _arc_summary(role: str, login: str, commits: int) -> str:
     # One sentence description of each character — shown in S02 (The Cast)
     summaries = {
-        "hero": f"{login} drove the project with {commits} commits, the backbone of this codebase.",
-        "ghost": f"{login} contributed {commits} commits then disappeared, their work lives on.",
+        "hero":        f"{login} drove the project with {commits} commits, the backbone of this codebase.",
+        "ghost":       f"{login} contributed {commits} commits then disappeared, their work lives on.",
         "late_joiner": f"{login} joined late but made {commits} meaningful contributions.",
-        "consistent": f"{login} showed up consistently across {commits} commits.",
+        "consistent":  f"{login} showed up consistently across {commits} commits.",
     }
     return summaries.get(role, f"{login} contributed {commits} commits.")
 
@@ -66,66 +67,36 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
     #         a low std means it's steady and predictable.
     mean = weekly["count"].mean()
     std = weekly["count"].std()
-
-    # WHY 2 * STD (2σ)?
-    #   In a roughly NORMAL distribution, ~95% of values fall within mean ± 2σ.
-    #   So anything ABOVE mean + 2σ is in the top ~2.5% — genuinely unusual.
-    #
-    #   • 1.5σ threshold → too SENSITIVE, flags many ordinary busy weeks as spikes.
-    #   • 3σ threshold   → too STRICT, only catches truly extreme outliers, misses
-    #                       real dramatic moments in most repos.
-    #   • 2σ is the SWEET SPOT: "unusual but not once-in-a-lifetime."
-    #
-    # EDGE CASE — LOW-VARIANCE REPOS (e.g. exactly 1 commit every week for years):
-    #   std ≈ 0, so mean + 2*std ≈ mean.
-    #   Any week with even 2 commits becomes a spike.
-    #   This is CORRECT BEHAVIOUR — any burst IS genuinely anomalous for that repo.
-    #
-    # ASSUMPTION: This heuristic assumes commit counts are ROUGHLY NORMALLY DISTRIBUTED.
-    #   In practice they are RIGHT-SKEWED (one big launch week pulls the mean up).
-    #   A more robust alternative would use MEDIAN + IQR instead of mean + std,
-    #   since median is not affected by outliers.
     weekly["is_spike"] = weekly["count"] > (mean + 2 * std)
 
-    # Convert to list of dicts so the LangChain agent and frontend can consume it
-    # → this becomes commit_series in the final return, fed into S03 visual_params
     commit_series = weekly.to_dict("records")
 
     # ── PART 3: Era detection ────────────────────────────────────────────────
     # Used by: S03 (The Rise) — eras are shown as chapter markers on the timeline
     # A new era starts when the repo goes dead for 4+ weeks then comes back
 
-    # Find all weeks that had zero commits (dead weeks)
-    zero_weeks = weekly[weekly["count"] == 0]
-
     # era_start begins at the very first commit
     era_start = commits_df.index.min()
-
     eras = []
 
     # Loop through dead weeks and cut a new era whenever there's a 28+ day gap
-    for _, row in zero_weeks.iterrows():
-        # If the gap between era_start and this dead week is more than 28 days,
-        # a proper active period happened — save it as a completed era
+    for _, row in weekly[weekly["count"] == 0].iterrows():
         if (row["week"] - era_start).days > 28:
-            eras.append(
-                {
-                    "start": str(era_start.date()),
-                    "end": str(row["week"].date()),
-                    "label": "Active period",
-                }
-            )
+            eras.append({
+                "start": str(era_start.date()),
+                "end":   str(row["week"].date()),
+                "label": "Active period",
+            })
+
             # Move era_start forward to after this dead zone
             era_start = row["week"]
 
     # Always add the final era (from last dead zone to last commit)
-    eras.append(
-        {
-            "start": str(era_start.date()),
-            "end": str(commits_df.index.max().date()),
-            "label": "Latest era",
-        }
-    )
+    eras.append({
+        "start": str(era_start.date()),
+        "end":   str(commits_df.index.max().date()),
+        "label": "Latest era",
+    })
 
     # ── PART 4: Character arc assignment ────────────────────────────────────
     # Used by: S02 (The Cast) — each contributor becomes a character with a role
@@ -155,30 +126,25 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
         if age_days > 180 and contrib.total_commits > 5:
             # Disappeared 180+ days ago but did real work — they are a ghost
             role = "ghost"
-
         elif joined_late and contrib.total_commits > 10:
             # Came in late but still made meaningful contributions
             role = "late_joiner"
-
         elif contrib.total_commits == max_commits and not hero_assigned:
             # Most commits in the whole repo — first one wins, no dual heroes
             role = "hero"
             hero_assigned = True
-
         else:
             # Everyone else — just showed up consistently
             role = "consistent"
 
-        characters.append(
-            {
-                "login": contrib.login,
-                "color": CONTRIBUTOR_COLORS[i % len(CONTRIBUTOR_COLORS)],
-                "role": role,
-                "commit_count": contrib.total_commits,
-                "active_months": contrib.active_months,
-                "arc_summary": _arc_summary(role, contrib.login, contrib.total_commits),
-            }
-        )
+        characters.append({
+            "login":        contrib.login,
+            "color":        CONTRIBUTOR_COLORS[i % len(CONTRIBUTOR_COLORS)],
+            "role":         role,
+            "commit_count": contrib.total_commits,
+            "active_months": contrib.active_months,
+            "arc_summary":  _arc_summary(role, contrib.login, contrib.total_commits),
+        })
 
     # ── PART 5: Hero commit detection ───────────────────────────────────────
     # Used by: S06 (The Hero Moment) — shown as the single biggest commit card
@@ -196,14 +162,12 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
 
     # Store the important details — fed into S06 visual_params in director.py
     hero_commit = {
-        "sha": hero_row["sha"],
+        "sha":          hero_row["sha"],
         "author_login": hero_row["author_login"],
-        "message": hero_row["message"],
+        "message":      hero_row["message"],
         "lines_changed": int(hero_row["lines_added"] + hero_row["lines_deleted"]),
-        "timestamp": str(hero_row["timestamp"].date()),
-        "diff_excerpt": hero_row["diff_excerpt"]
-        if "diff_excerpt" in commits_reset.columns
-        else None,
+        "timestamp":    str(hero_row["timestamp"].date()),
+        "diff_excerpt": hero_row["diff_excerpt"] if "diff_excerpt" in commits_reset.columns else None,
     }
 
     # ── PART 6: Plot twist detection ────────────────────────────────────────
@@ -221,9 +185,9 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
         biggest_spike = spike_rows.loc[spike_rows["count"].idxmax()]
 
         plot_twist = {
-            "week": str(biggest_spike["week"].date()),
+            "week":         str(biggest_spike["week"].date()),
             "commit_count": int(biggest_spike["count"]),
-            "type": "commit_spike",
+            "type":         "commit_spike",
         }
 
     # ── PART 7: Ghost files + final return ──────────────────────────────────
@@ -245,19 +209,19 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
     #   plot_twist → S04
     #   ghost_files → S05
     return {
-        "repo_name": repo_data.repo_name,
-        "description": repo_data.description,
+        "repo_name":        repo_data.repo_name,
+        "description":      repo_data.description,
         "primary_language": repo_data.primary_language,
-        "total_commits": repo_data.total_commits,
-        "repo_age_days": (datetime.now(timezone.utc) - repo_data.created_at).days,
+        "total_commits":    repo_data.total_commits,
+        "repo_age_days":    (datetime.now(timezone.utc) - repo_data.created_at).days,
         "commit_series": [
             {"week": str(r["week"].date()), "count": int(r["count"])}
             for r in commit_series
         ],
-        "eras": eras,
-        "characters": characters,
-        "hero_commit": hero_commit,
-        "plot_twist": plot_twist,
-        "ghost_files": ghost_files,
+        "eras":             eras,
+        "characters":       characters,
+        "hero_commit":      hero_commit,
+        "plot_twist":       plot_twist,
+        "ghost_files":      ghost_files,
         "contributor_count": len(repo_data.contributors),
     }

@@ -1,6 +1,7 @@
-from pydantic import BaseModel
-from typing import List, Optional, Literal, Dict, Any
 from datetime import datetime
+from typing import Any, Literal, Optional
+
+from pydantic import BaseModel
 
 # CommitData represents a single commit in the repository
 class CommitData(BaseModel):
@@ -20,7 +21,7 @@ class ContributorStats(BaseModel):
     total_commits: int                  # total number of commits made
     first_commit: datetime              # when they first contributed
     last_commit: datetime               # when they last contributed
-    languages_touched: List[str]        # list because one contributor can touch many languages
+    languages_touched: list[str]        # list because one contributor can touch many languages
     total_lines_changed: int            # total lines added + deleted
     active_months: int                  # how many months they were active
 
@@ -30,7 +31,7 @@ class FileHistory(BaseModel):
     created: datetime                   # when file was first committed
     last_modified: datetime             # when file was last touched
     total_modifications: int            # how many times it was changed
-    authors: List[str]                  # list because multiple people can edit one file
+    authors: list[str]                  # list because multiple people can edit one file
     is_ghost: bool                      # True if not touched in 180+ days and was once active
 
 # RepoData is the master object - contains everything about the repository
@@ -41,9 +42,9 @@ class RepoData(BaseModel):
     created_at: datetime                    # when repo was created
     primary_language: Optional[str] = None # optional, some repos have no primary language
     total_commits: int                      # total commit count
-    commits: List[CommitData]              # list of CommitData objects - nested validation
-    contributors: List[ContributorStats]   # list of ContributorStats objects - nested validation
-    file_histories: List[FileHistory]      # list of FileHistory objects - nested validation
+    commits: list[CommitData]              # list of CommitData objects - nested validation
+    contributors: list[ContributorStats]   # list of ContributorStats objects - nested validation
+    file_histories: list[FileHistory]      # list of FileHistory objects - nested validation
 
 
 # Character = one contributor's role in the film
@@ -84,7 +85,7 @@ class Scene(BaseModel):
     title: str
     duration_secs: int
     narration_text: str
-    visual_params: Dict[str, Any] = {}   # extra data each scene needs
+    visual_params: dict[str, Any] = {}   # extra data each scene needs
     audio_url: Optional[str] = None      # base64 data URI for ElevenLabs TTS voiceover
 
 # ScriptJSON = the master object the agent returns
@@ -97,11 +98,11 @@ class ScriptJSON(BaseModel):
     total_commits: int
     repo_age_days: int
     contributor_count: int
-    characters: List[Character]
-    eras: List[Era]
+    characters: list[Character]
+    eras: list[Era]
     plot_twist: Optional[PlotTwist]
-    ghost_files: List[str]
+    ghost_files: list[str]
     hero_commit: HeroCommit
-    commit_series: List[Dict[str, Any]]
-    scenes: List[Scene]
+    commit_series: list[dict[str, Any]]
+    scenes: list[Scene]
     music_url: Optional[str] = None  # base64 data URI for background music (ElevenLabs)

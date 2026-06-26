@@ -55,33 +55,26 @@ export const S05GhostTowns: React.FC<{
           ))}
         </div>
 
-        {hasGhosts ? files.map((file, i) => {
-          const start   = 32 + i * 10;
-          const entered = interpolate(frame, [start, start + 12], [0, 1], { extrapolateRight: "clamp" });
-          const pulse   = 0.45 + 0.55 * Math.abs(Math.sin((frame - start) * 0.08));
-          const opacity = frame < start ? 0 : entered < 1 ? entered : pulse;
-
-          return (
-            <div key={file} style={{
-              opacity,
-              fontFamily: "monospace", fontSize: 15,
-              color: "#5566aa", marginBottom: 10,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <span style={{ color: "#22224a", fontSize: 13 }}>~</span>
-              {file}
-            </div>
-          );
-        }) : (() => {
-          const msgOpacity = interpolate(frame, [32, 50], [0, 1], { extrapolateRight: "clamp" });
-          return (
-            <div style={{ opacity: msgOpacity, fontFamily: "monospace", fontSize: 15, color: "#5DCAA5" }}>
-              <div style={{ marginBottom: 10 }}>$ find . -mtime +180 -type f</div>
-              <div style={{ color: "#2a4a2a", marginBottom: 10 }}>{"// no results"}</div>
-              <div style={{ color: "#5DCAA5" }}>All files are recently active — this codebase has no ghosts.</div>
-            </div>
-          );
-        })()}
+        {hasGhosts ? (
+          files.map((file, i) => {
+            const start   = 32 + i * 10;
+            const entered = interpolate(frame, [start, start + 12], [0, 1], { extrapolateRight: "clamp" });
+            const pulse   = 0.45 + 0.55 * Math.abs(Math.sin((frame - start) * 0.08));
+            const opacity = frame < start ? 0 : entered < 1 ? entered : pulse;
+            return (
+              <div key={file} style={{ opacity, fontFamily: "monospace", fontSize: 15, color: "#5566aa", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "#22224a", fontSize: 13 }}>~</span>
+                {file}
+              </div>
+            );
+          })
+        ) : (
+          <div style={{ opacity: interpolate(frame, [32, 50], [0, 1], { extrapolateRight: "clamp" }), fontFamily: "monospace", fontSize: 15, color: "#5DCAA5" }}>
+            <div style={{ marginBottom: 10 }}>$ find . -mtime +180 -type f</div>
+            <div style={{ color: "#2a4a2a", marginBottom: 10 }}>{"// no results"}</div>
+            <div>All files are recently active - this codebase has no ghosts.</div>
+          </div>
+        )}
       </div>
 
       <Subtitle text={narration} startFrame={140} />

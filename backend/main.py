@@ -6,13 +6,13 @@ import threading
 import time
 import uuid
 from collections import defaultdict
+from typing import Literal, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from typing import Literal
 
 from agent.director import build_script, CancelledError
 from analytics.analyzer import run_analytics
@@ -44,20 +44,11 @@ def _build_config_status() -> dict:
         "warnings": warnings,
     }
 
+
 _CONFIG_STATUS = _build_config_status()
 
-
-def _require_runtime_config() -> None:
-    if _CONFIG_STATUS["missing_required"]:
-        missing = ", ".join(_CONFIG_STATUS["missing_required"])
-        raise HTTPException(
-            status_code=503,
-            detail=f"Backend is missing required environment variables: {missing}",
-        )
-
-
 # ---------------------------------------------------------------------------
-# In-memory cache — capped at 50 entries, TTL 10 minutes
+# Cache: capped at 50 entries, 10-minute TTL.
 # ---------------------------------------------------------------------------
 _CACHE: dict = {}
 _CACHE_TTL = 600
@@ -84,7 +75,7 @@ def _cache_set(key: tuple, value):
 
 
 # ---------------------------------------------------------------------------
-# Rate limiter — sliding window per IP, prunes dead entries
+# Rate limiter: sliding window per IP.
 # ---------------------------------------------------------------------------
 class _RateLimiter:
     def __init__(self, max_requests: int = 5, window_seconds: int = 60):
@@ -145,7 +136,7 @@ async def generate_stream(
     request: Request,
     repo_url: str,
     tone: Literal["epic", "documentary", "casual"] = "documentary",
-    request_id: str | None = None,
+    request_id: Optional[str] = None,
 ):
     req_id = request_id or uuid.uuid4().hex[:8]
     client_ip = request.client.host if request.client else "unknown"
@@ -167,15 +158,13 @@ async def generate_stream(
 
     cancel_event = threading.Event()
     _cancel_events[req_id] = cancel_event
-    log.info("[stream %s] cancel handler registered", req_id)
 
     async def event_stream():
         loop = asyncio.get_running_loop()
 
         try:
-            config_status = _build_config_status()
-            if config_status["missing_required"]:
-                missing = ", ".join(config_status["missing_required"])
+            if _CONFIG_STATUS["missing_required"]:
+                missing = ", ".join(_CONFIG_STATUS["missing_required"])
                 yield f"data: {json.dumps({'stage': 'error', 'msg': f'Backend is missing required environment variables: {missing}'})}\n\n"
                 return
 
@@ -244,7 +233,7 @@ async def generate_stream(
                 raise Exception("Ingestion failed to return data.")
 
             log.info("[stream %s] ingestion done | starting analytics", req_id)
-            yield f"data: {json.dumps({'stage': 'analytics', 'pct': 40, 'msg': 'Analysing commit history…'})}\n\n"
+            yield f"data: {json.dumps({'stage': 'analytics', 'pct': 40, 'msg': 'Analysing commit history...'})}\n\n"
             analytics = await asyncio.to_thread(run_analytics, repo_data)
 
             if cancel_event.is_set():
@@ -252,7 +241,7 @@ async def generate_stream(
                 return
 
             log.info("[stream %s] analytics done | starting LLM agent", req_id)
-            yield f"data: {json.dumps({'stage': 'agent', 'pct': 70, 'msg': 'Writing the cinematic script…'})}\n\n"
+            yield f"data: {json.dumps({'stage': 'agent', 'pct': 70, 'msg': 'Writing the cinematic script...'})}\n\n"
             script = await asyncio.to_thread(build_script, analytics, tone, cancel_event)
 
             if cancel_event.is_set():

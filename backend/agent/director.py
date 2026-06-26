@@ -1,6 +1,6 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Any
+from typing import Any, Optional
 
 from agent.llm_balancer import LLMLoadBalancer
 from schemas import ScriptJSON, Scene, Character, Era, PlotTwist, HeroCommit
@@ -11,18 +11,18 @@ class CancelledError(Exception):
     pass
 
 
-def _check_cancelled(cancel_event: threading.Event | None) -> None:
+def _check_cancelled(cancel_event: Optional[threading.Event]) -> None:
     if cancel_event is not None and cancel_event.is_set():
         raise CancelledError("Generation cancelled by client")
 
 
 SCENE_TEMPLATES = {
-    "S01": ("The origin",           8,  "The story begins."),
-    "S02": ("The cast",             12, "Meet the people who built this."),
-    "S03": ("The rise",             20, "Watch the codebase come alive."),
-    "S04": ("The plot twist",       10, "Then everything changed."),
-    "S05": ("Ghost towns",          8,  "Some ideas were left behind."),
-    "S06": ("The hero moment",      12, "One commit changed everything."),
+    "S01": ("The origin",             8,  "The story begins."),
+    "S02": ("The cast",               12, "Meet the people who built this."),
+    "S03": ("The rise",               20, "Watch the codebase come alive."),
+    "S04": ("The plot twist",         10, "Then everything changed."),
+    "S05": ("Ghost towns",            8,  "Some ideas were left behind."),
+    "S06": ("The hero moment",        12, "One commit changed everything."),
     "S07": ("The state of the world", 15, "This is what was built."),
 }
 
@@ -30,9 +30,8 @@ SCENE_TEMPLATES = {
 def build_script(
     analytics: dict[str, Any],
     tone: str,
-    cancel_event: threading.Event | None = None,
+    cancel_event: Optional[threading.Event] = None,
 ) -> ScriptJSON:
-
     llm = LLMLoadBalancer(temperature=0.7)
     repo_name = analytics["repo_name"]
 
@@ -75,8 +74,8 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
             "- No technical identifiers, repo paths (owner/repo), file paths, or code-style names.\n"
             "- No parentheses, brackets, asterisks, or stage directions.\n"
             "- No mention of music, visuals, or the film itself.\n"
-            "- No dates or years unless explicitly given in the Context — never guess.\n"
-            "- No manner words ('warmly', 'boldly', 'dramatically') — just speak the narration.\n"
+            "- No dates or years unless explicitly given in the Context - never guess.\n"
+            "- No manner words ('warmly', 'boldly', 'dramatically') - just speak the narration.\n"
             "- Sound like a human speaking, not an AI writing. Use contractions, natural rhythm."
         )
         try:
@@ -113,6 +112,7 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
         narration_tasks["plot_twist"] = (context_map["plot_twist"], "Then everything changed.")
     narration_tasks["hero"] = (context_map["hero"], "One commit changed everything.")
 
+    # All narrations run in parallel - reduces agent phase from ~20s to ~3s.
     narrations: dict[str, str] = {}
     with ThreadPoolExecutor(max_workers=len(narration_tasks)) as executor:
         future_to_key = {
@@ -132,7 +132,7 @@ Speak naturally. Use contractions. Vary sentence rhythm. Sound like a real perso
     # Build scenes
     scenes = []
     for scene_id, (title, duration, fallback) in SCENE_TEMPLATES.items():
-        visual_params = {}
+        visual_params: dict[str, Any] = {}
         if scene_id == "S03":
             visual_params = {"commit_series": commit_series, "eras": analytics.get("eras", [])}
         elif scene_id == "S06":
