@@ -36,14 +36,16 @@ export const S03Rise: React.FC<{
 
   const CX = 340, CY = 340, OUTER = 240, INNER = 110;
 
-  let cumDeg = 0;
-  const slices = top.map((c, i) => {
-    const pct = c.commit_count / total;
-    const startDeg = cumDeg;
-    const endDeg = cumDeg + pct * 360;
-    cumDeg = endDeg;
-    return { c, pct, startDeg, endDeg, color: COLORS[i % COLORS.length] };
-  });
+  const slices = top.reduce<{ c: typeof top[0]; pct: number; startDeg: number; endDeg: number; color: string }[]>(
+    (acc, c, i) => {
+      const pct = c.commit_count / total;
+      const startDeg = acc.length > 0 ? acc[acc.length - 1].endDeg : 0;
+      const endDeg = startDeg + pct * 360;
+      acc.push({ c, pct, startDeg, endDeg, color: COLORS[i % COLORS.length] });
+      return acc;
+    },
+    []
+  );
 
   const titleOpacity = interpolate(frame, [0, 20], [0, 1], { extrapolateRight: "clamp" });
 

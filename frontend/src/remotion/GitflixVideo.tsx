@@ -1,6 +1,7 @@
 import React from "react";
 import { Series, Html5Audio, staticFile, useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 import type { ScriptJSON } from "./types";
+import { FPS, SCENE_DURATIONS } from "./constants";
 import { S01Origin } from "./scenes/S01Origin";
 import { S02Cast } from "./scenes/S02Cast";
 import { S03Rise } from "./scenes/S03Rise";
@@ -8,19 +9,6 @@ import { S04PlotTwist } from "./scenes/S04PlotTwist";
 import { S05GhostTowns } from "./scenes/S05GhostTowns";
 import { S06HeroCommit } from "./scenes/S06HeroCommit";
 import { S07FinalState } from "./scenes/S07FinalState";
-
-export const FPS = 30;
-
-// cinematic pacing — each scene has enough time to breathe and land
-export const SCENE_DURATIONS = {
-  S01: 16,  // origin
-  S02: 22,  // cast — 6 cards need time to read
-  S03: 18,  // commit share pie chart
-  S04: 17,  // twist
-  S05: 18,  // ghosts
-  S06: 22,  // hero
-  S07: 18,  // finale
-};
 
 const TOTAL_FRAMES = Object.values(SCENE_DURATIONS).reduce((a, b) => a + b, 0) * FPS;
 

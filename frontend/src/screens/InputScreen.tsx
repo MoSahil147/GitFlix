@@ -26,7 +26,7 @@ export default function InputScreen({ repoUrl, tone, error, cooldown, onRepoUrlC
           Every repo<br />has a story.
         </h1>
 
-        <p style={{ fontSize: 16, color: "#8a7a60", marginBottom: 40, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 16, color: "var(--text-muted)", marginBottom: 40, lineHeight: 1.6 }}>
           Paste a GitHub link. Get a cinematic documentary of your repository's history.
         </p>
 
@@ -84,7 +84,7 @@ export default function InputScreen({ repoUrl, tone, error, cooldown, onRepoUrlC
         {([["7", "Chapters"], ["3", "Tones"], ["~60s", "Wait time"]] as const).map(([num, label], i) => (
           <div key={label} style={{ padding: "24px 0", paddingLeft: i > 0 ? 32 : 0, paddingRight: i < 2 ? 32 : 0, borderRight: i < 2 ? "1px solid var(--border)" : "none" }}>
             <div style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 900, letterSpacing: -1 }}>{num}</div>
-            <div style={{ fontSize: 11, color: "#8a7a60", textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>{label}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 2, marginTop: 4 }}>{label}</div>
           </div>
         ))}
       </div>

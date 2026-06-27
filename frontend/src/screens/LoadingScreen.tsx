@@ -76,9 +76,14 @@ export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
       </div>
 
       <div style={{ borderTop: "1px solid var(--border)", padding: "16px 48px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>This usually takes about 60 seconds</span>
-        <button onClick={onCancel} style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 20px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
-          Cancel
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Usually ~60s on average - larger repositories may take longer</span>
+        <button
+          onClick={onCancel}
+          style={{ fontSize: 12, color: "var(--cancel)", border: "1px solid var(--cancel-dim)", padding: "8px 20px", borderRadius: 6, background: "var(--cancel-bg)", cursor: "pointer", letterSpacing: 0.3 }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cancel)"; e.currentTarget.style.background = "var(--cancel)"; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--cancel-dim)"; e.currentTarget.style.background = "var(--cancel-bg)"; e.currentTarget.style.color = "var(--cancel)"; }}
+        >
+          ✕ Cancel generation
         </button>
       </div>
     </div>
