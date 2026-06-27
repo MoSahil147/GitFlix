@@ -1,6 +1,23 @@
 .env
 *.pyc
-__pychache__/
+__pycache__/
 .DS_Store
 .superpowers/
 start.txt
+
+# render server
+render-server/node_modules/
+
+# python
+backend/__pycache__/
+backend/.venv/
+backend/venv/
+*.egg-info/
+
+# build outputs
+frontend/dist/
+frontend/dist-ssr/
+
+# logs
+*.log
+npm-debug.log*
