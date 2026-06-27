@@ -39,7 +39,7 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
         }
         actions={
           <>
-            <button onClick={onNewFilm} style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
+            <button onClick={onNewFilm} className="btn-new-film" style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
               ← New Film
             </button>
             <button onClick={onExport} style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: "var(--accent)", border: "none", padding: "8px 18px", borderRadius: 6, cursor: "not-allowed", opacity: 0.5 }} title="Export coming soon">

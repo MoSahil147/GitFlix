@@ -55,3 +55,15 @@ input { font-family: var(--font-body); }
 .stage-dot-active {
   animation: stage-pulse 1.2s ease-in-out infinite;
 }
+
+.btn-new-film {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+}
+.btn-new-film:hover {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 0 10px 2px var(--accent-glow);
+}
+.btn-new-film:active {
+  box-shadow: 0 0 18px 4px var(--accent-glow);
+}
