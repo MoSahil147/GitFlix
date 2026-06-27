@@ -14,9 +14,9 @@ const RENDER_SECRET = process.env.RENDER_SECRET || '';
 app.use(cors({ origin: ALLOWED_ORIGIN }));
 
 function checkSecret(req, res, next) {
-  if (RENDER_SECRET && req.headers['x-render-secret'] !== RENDER_SECRET) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+  if (!RENDER_SECRET) return next();
+  const provided = req.headers['x-render-secret'] || req.query.secret || '';
+  if (provided !== RENDER_SECRET) return res.status(401).json({ error: 'Unauthorized' });
   next();
 }
 

@@ -22,9 +22,11 @@ interface Props {
   chapterFrames: Record<string, number>;
   onNewFilm: () => void;
   onExport: () => void;
+  exporting: boolean;
+  exportPct: number;
 }
 
-export default function PreviewScreen({ script, playerRef, totalFrames, chapterFrames, onNewFilm, onExport }: Props) {
+export default function PreviewScreen({ script, playerRef, totalFrames, chapterFrames, onNewFilm, onExport, exporting, exportPct }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--bg)" }}>
       <NavBar
@@ -42,8 +44,23 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
             <button onClick={onNewFilm} className="btn-new-film" style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
               ← New Film
             </button>
-            <button onClick={onExport} style={{ fontSize: 12, fontWeight: 700, color: "#fff", background: "var(--accent)", border: "none", padding: "8px 18px", borderRadius: 6, cursor: "not-allowed", opacity: 0.5 }} title="Export coming soon">
-              Export MP4
+            <button
+              onClick={onExport}
+              disabled={exporting}
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#fff",
+                background: exporting ? "var(--text-mid)" : "var(--accent)",
+                border: "none",
+                padding: "8px 18px",
+                borderRadius: 6,
+                cursor: exporting ? "not-allowed" : "pointer",
+                minWidth: 120,
+                transition: "background 0.2s ease",
+              }}
+            >
+              {exporting ? `Rendering… ${exportPct}%` : "Export MP4"}
             </button>
           </>
         }

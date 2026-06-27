@@ -40,6 +40,8 @@ export default function App() {
   const [script, setScript]     = useState<ScriptJSON | null>(null);
   const [error, setError]       = useState("");
   const [cooldown, setCooldown] = useState(false);
+  const [exporting, setExporting]   = useState(false);
+  const [exportPct, setExportPct]   = useState(0);
   const playerRef               = useRef<PlayerRef>(null);
   const eventSourceRef          = useRef<EventSource | null>(null);
   const requestIdRef            = useRef<string | null>(null);
@@ -173,8 +175,59 @@ export default function App() {
     };
   };
 
-  const handleExport = () => {
-    alert("MP4 export coming soon! For now, use your browser's screen recorder to capture the film.");
+  const handleExport = async () => {
+    if (exporting || !script) return;
+    setExporting(true);
+    setExportPct(0);
+
+    const renderUrl = (import.meta.env.VITE_RENDER_URL ?? "").trim() || "http://localhost:3001";
+    const secret = encodeURIComponent(import.meta.env.VITE_RENDER_SECRET || "");
+
+    try {
+      const res = await fetch(`${renderUrl}/render`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-render-secret": import.meta.env.VITE_RENDER_SECRET || "" },
+        body: JSON.stringify({ script }),
+      });
+      if (!res.ok) throw new Error("Render server returned an error");
+      const { id } = await res.json() as { id: string };
+
+      const es = new EventSource(`${renderUrl}/render/${id}/progress?secret=${secret}`);
+
+      es.onmessage = (e) => {
+        const data = JSON.parse(e.data) as { type: string; pct?: number; message?: string };
+
+        if (data.type === "progress") {
+          setExportPct(data.pct ?? 0);
+        } else if (data.type === "done") {
+          es.close();
+          const a = document.createElement("a");
+          a.href = `${renderUrl}/render/${id}/file?secret=${secret}`;
+          a.download = "gitflix.mp4";
+          a.click();
+          setExporting(false);
+          setExportPct(0);
+        } else if (data.type === "error") {
+          es.close();
+          setExporting(false);
+          setExportPct(0);
+          setError(`Export failed: ${data.message}`);
+          setStage("error");
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        setExporting(false);
+        setExportPct(0);
+        setError("Lost connection to render server. Is it running on port 3001?");
+        setStage("error");
+      };
+    } catch {
+      setExporting(false);
+      setError("Could not reach render server. Is it running on port 3001?");
+      setStage("error");
+    }
   };
 
   if (stage === "input") return (
@@ -205,6 +258,8 @@ export default function App() {
       chapterFrames={CHAPTER_FRAMES}
       onNewFilm={() => { setStage("input"); setScript(null); }}
       onExport={handleExport}
+      exporting={exporting}
+      exportPct={exportPct}
     />
   );
 
