@@ -7,10 +7,32 @@ const { renderMedia, selectComposition } = require('@remotion/renderer');
 const { v4: uuid } = require('uuid');
 
 const app = express();
-app.use(cors());
+
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL || 'http://localhost:5173';
+const RENDER_SECRET = process.env.RENDER_SECRET || '';
+
+app.use(cors({ origin: ALLOWED_ORIGIN }));
+
+function checkSecret(req, res, next) {
+  if (RENDER_SECRET && req.headers['x-render-secret'] !== RENDER_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
 app.use(express.json({ limit: '5mb' }));
 
 const jobs = new Map();
+
+setInterval(() => {
+  const cutoff = Date.now() - 60 * 60 * 1000;
+  for (const [id, job] of jobs) {
+    if (job.createdAt < cutoff) {
+      if (job.outPath) fs.unlink(job.outPath, () => {});
+      jobs.delete(id);
+    }
+  }
+}, 10 * 60 * 1000);
 
 let cachedBundle = null;
 
@@ -35,13 +57,13 @@ async function getBundle() {
   return cachedBundle;
 }
 
-app.post('/render', (req, res) => {
+app.post('/render', checkSecret, (req, res) => {
   const { script } = req.body;
   if (!script) return res.status(400).json({ error: 'script is required' });
 
   const id = uuid();
   const outPath = path.join('/tmp', `gitflix-${id}.mp4`);
-  jobs.set(id, { status: 'rendering', outPath, pct: 0, error: null });
+  jobs.set(id, { status: 'rendering', outPath, pct: 0, error: null, createdAt: Date.now() });
   res.json({ id });
 
   (async () => {
@@ -71,13 +93,13 @@ app.post('/render', (req, res) => {
     } catch (err) {
       console.error('Render failed:', err.message);
       const job = jobs.get(id);
-      if (job) { job.status = 'error'; job.error = err.message; }
+      if (job) { job.status = 'error'; job.error = 'Render failed. Check server logs for details.'; }
       fs.unlink(outPath, () => {});
     }
   })();
 });
 
-app.get('/render/:id/progress', (req, res) => {
+app.get('/render/:id/progress', checkSecret, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -114,7 +136,7 @@ app.get('/render/:id/progress', (req, res) => {
   req.on('close', () => clearInterval(tick));
 });
 
-app.get('/render/:id/file', (req, res) => {
+app.get('/render/:id/file', checkSecret, (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job || job.status !== 'done') return res.status(404).json({ error: 'Not ready' });
 
@@ -123,7 +145,7 @@ app.get('/render/:id/file', (req, res) => {
 
   const stream = fs.createReadStream(job.outPath);
   stream.pipe(res);
-  stream.on('end', () => {
+  stream.on('close', () => {
     fs.unlink(job.outPath, () => {});
     jobs.delete(req.params.id);
   });
