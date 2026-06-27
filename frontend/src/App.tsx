@@ -63,8 +63,6 @@ export default function App() {
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = "A film is being generated. Are you sure you want to leave?";
-      return e.returnValue;
     };
 
     const handlePageHide = () => {
@@ -181,7 +179,6 @@ export default function App() {
     setExportPct(0);
 
     const renderUrl = (import.meta.env.VITE_RENDER_URL ?? "").trim() || "http://localhost:3001";
-    const secret = encodeURIComponent(import.meta.env.VITE_RENDER_SECRET || "");
 
     try {
       const res = await fetch(`${renderUrl}/render`, {
@@ -190,9 +187,9 @@ export default function App() {
         body: JSON.stringify({ script }),
       });
       if (!res.ok) throw new Error("Render server returned an error");
-      const { id } = await res.json() as { id: string };
+      const { id, token } = await res.json() as { id: string; token: string };
 
-      const es = new EventSource(`${renderUrl}/render/${id}/progress?secret=${secret}`);
+      const es = new EventSource(`${renderUrl}/render/${id}/progress?token=${encodeURIComponent(token)}`);
 
       es.onmessage = (e) => {
         const data = JSON.parse(e.data) as { type: string; pct?: number; message?: string };
@@ -202,7 +199,7 @@ export default function App() {
         } else if (data.type === "done") {
           es.close();
           const a = document.createElement("a");
-          a.href = `${renderUrl}/render/${id}/file?secret=${secret}`;
+          a.href = `${renderUrl}/render/${id}/file?token=${encodeURIComponent(token)}`;
           a.download = "gitflix.mp4";
           a.click();
           setExporting(false);

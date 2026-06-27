@@ -11,18 +11,30 @@ const app = express();
 const ALLOWED_ORIGIN = process.env.FRONTEND_URL || 'http://localhost:5173';
 const RENDER_SECRET = process.env.RENDER_SECRET || '';
 
+if (!RENDER_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('WARNING: RENDER_SECRET is not set — render server is open to anyone');
+}
+
 app.use(cors({ origin: ALLOWED_ORIGIN }));
+
+const jobs = new Map();
 
 function checkSecret(req, res, next) {
   if (!RENDER_SECRET) return next();
-  const provided = req.headers['x-render-secret'] || req.query.secret || '';
-  if (provided !== RENDER_SECRET) return res.status(401).json({ error: 'Unauthorized' });
+  if (req.headers['x-render-secret'] !== RENDER_SECRET) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+}
+
+function checkJobToken(req, res, next) {
+  const job = jobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (job.token && req.query.token !== job.token) return res.status(401).json({ error: 'Unauthorized' });
+  req.job = job;
   next();
 }
 
 app.use(express.json({ limit: '5mb' }));
 
-const jobs = new Map();
 
 setInterval(() => {
   const cutoff = Date.now() - 60 * 60 * 1000;
@@ -62,9 +74,10 @@ app.post('/render', checkSecret, (req, res) => {
   if (!script) return res.status(400).json({ error: 'script is required' });
 
   const id = uuid();
+  const token = uuid();
   const outPath = path.join('/tmp', `gitflix-${id}.mp4`);
-  jobs.set(id, { status: 'rendering', outPath, pct: 0, error: null, createdAt: Date.now() });
-  res.json({ id });
+  jobs.set(id, { status: 'rendering', outPath, pct: 0, error: null, token, createdAt: Date.now() });
+  res.json({ id, token });
 
   (async () => {
     try {
@@ -99,7 +112,7 @@ app.post('/render', checkSecret, (req, res) => {
   })();
 });
 
-app.get('/render/:id/progress', checkSecret, (req, res) => {
+app.get('/render/:id/progress', checkJobToken, (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -136,9 +149,9 @@ app.get('/render/:id/progress', checkSecret, (req, res) => {
   req.on('close', () => clearInterval(tick));
 });
 
-app.get('/render/:id/file', checkSecret, (req, res) => {
-  const job = jobs.get(req.params.id);
-  if (!job || job.status !== 'done') return res.status(404).json({ error: 'Not ready' });
+app.get('/render/:id/file', checkJobToken, (req, res) => {
+  const job = req.job;
+  if (job.status !== 'done') return res.status(404).json({ error: 'Not ready' });
 
   res.setHeader('Content-Disposition', 'attachment; filename="gitflix.mp4"');
   res.setHeader('Content-Type', 'video/mp4');
