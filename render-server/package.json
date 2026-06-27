@@ -1,0 +1,15 @@
+{
+  "name": "gitflix-render-server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.481",
+    "@remotion/renderer": "4.0.481",
+    "cors": "2.8.5",
+    "express": "4.18.2",
+    "uuid": "9.0.0"
+  }
+}
