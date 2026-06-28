@@ -64,6 +64,7 @@ export default function App() {
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
+      e.returnValue = "";
     };
 
     const handlePageHide = () => {
