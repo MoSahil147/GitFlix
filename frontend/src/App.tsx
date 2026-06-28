@@ -216,7 +216,7 @@ export default function App() {
           exportEsRef.current = null;
           setExporting(false);
           setExportPct(0);
-          setError(`Export failed: ${data.message}`);
+          setError("Oops! Our server is a bit overworked and couldn't finish rendering your video. Pro tip: Screen recording is a quick workaround if you need it right away!");
           setStage("error");
         }
       };
@@ -226,12 +226,12 @@ export default function App() {
         exportEsRef.current = null;
         setExporting(false);
         setExportPct(0);
-        setError("Lost connection to render server. Is it running on port 3001?");
+        setError("Oops! Our server is a bit overworked and couldn't finish rendering your video. Pro tip: Screen recording is a quick workaround if you need it right away!");
         setStage("error");
       };
     } catch {
       setExporting(false);
-      setError("Could not reach render server. Is it running on port 3001?");
+      setError("Oops! Our server is a bit overworked and couldn't finish rendering your video. Pro tip: Screen recording is a quick workaround if you need it right away!");
       setStage("error");
     }
   };
