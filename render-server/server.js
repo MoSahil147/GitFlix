@@ -77,11 +77,10 @@ async function getBundle() {
 }
 
 app.post('/render', checkSecret, (req, res) => {
-  const { script, resolution } = req.body;
+  const { script } = req.body;
   if (!script) return res.status(400).json({ error: 'script is required' });
 
-  const scaleMap = { '360p': 1/3, '720p': 2/3, '1080p': 1 };
-  const scale = scaleMap[resolution] ?? 2/3;
+  const scale = 4 / 9; // 480p
 
   const id = uuid();
   const token = uuid();

@@ -15,8 +15,6 @@ const CHAPTERS = [
   { id: "S07", label: "Finale" },
 ];
 
-export type Resolution = "360p" | "720p" | "1080p";
-
 interface Props {
   script: ScriptJSON;
   playerRef: React.RefObject<PlayerRef | null>;
@@ -26,17 +24,9 @@ interface Props {
   onExport: () => void;
   exporting: boolean;
   exportPct: number;
-  resolution: Resolution;
-  onResolutionChange: (r: Resolution) => void;
 }
 
-const RESOLUTIONS: { value: Resolution; label: string; hint: string }[] = [
-  { value: "360p", label: "360p", hint: "Fast" },
-  { value: "720p", label: "720p", hint: "Recommended" },
-  { value: "1080p", label: "1080p", hint: "Slow" },
-];
-
-export default function PreviewScreen({ script, playerRef, totalFrames, chapterFrames, onNewFilm, onExport, exporting, exportPct, resolution, onResolutionChange }: Props) {
+export default function PreviewScreen({ script, playerRef, totalFrames, chapterFrames, onNewFilm, onExport, exporting, exportPct }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--bg)" }}>
       <NavBar
@@ -54,51 +44,24 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
             <button onClick={onNewFilm} className="btn-new-film" style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
               ← New Film
             </button>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ display: "flex", border: "1px solid var(--border-dim)", borderRadius: 6, overflow: "hidden" }}>
-                  {RESOLUTIONS.map(r => (
-                    <button
-                      key={r.value}
-                      onClick={() => !exporting && onResolutionChange(r.value)}
-                      style={{
-                        fontSize: 11,
-                        fontWeight: resolution === r.value ? 700 : 400,
-                        color: resolution === r.value ? "var(--accent)" : "var(--text-muted)",
-                        background: resolution === r.value ? "var(--accent-dim)" : "transparent",
-                        border: "none",
-                        borderRight: r.value !== "1080p" ? "1px solid var(--border-dim)" : "none",
-                        padding: "6px 10px",
-                        cursor: exporting ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  onClick={onExport}
-                  disabled={exporting}
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 700,
-                    color: "#fff",
-                    background: exporting ? "var(--text-mid)" : "var(--accent)",
-                    border: "none",
-                    padding: "8px 18px",
-                    borderRadius: 6,
-                    cursor: exporting ? "not-allowed" : "pointer",
-                    minWidth: 120,
-                    transition: "background 0.2s ease",
-                  }}
-                >
-                  {exporting ? `Rendering… ${exportPct}%` : "Export MP4"}
-                </button>
-              </div>
-              <span style={{ fontSize: 10, color: "var(--text-mid)" }}>
-                {RESOLUTIONS.find(r => r.value === resolution)?.hint} · render time depends on your machine
-              </span>
-            </div>
+            <button
+              onClick={onExport}
+              disabled={exporting}
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: "#fff",
+                background: exporting ? "var(--text-mid)" : "var(--accent)",
+                border: "none",
+                padding: "8px 18px",
+                borderRadius: 6,
+                cursor: exporting ? "not-allowed" : "pointer",
+                minWidth: 120,
+                transition: "background 0.2s ease",
+              }}
+            >
+              {exporting ? `Rendering… ${exportPct}%` : "Export MP4"}
+            </button>
           </>
         }
       />

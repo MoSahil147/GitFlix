@@ -5,7 +5,6 @@ import type { ScriptJSON } from "./remotion/types";
 import InputScreen   from "./screens/InputScreen";
 import LoadingScreen from "./screens/LoadingScreen";
 import PreviewScreen from "./screens/PreviewScreen";
-import type { Resolution } from "./screens/PreviewScreen";
 import ErrorScreen   from "./screens/ErrorScreen";
 
 const API = (import.meta.env.VITE_API_URL ?? "").trim() || (import.meta.env.DEV ? "/api" : "");
@@ -41,9 +40,8 @@ export default function App() {
   const [script, setScript]     = useState<ScriptJSON | null>(null);
   const [error, setError]       = useState("");
   const [cooldown, setCooldown] = useState(false);
-  const [exporting, setExporting]     = useState(false);
-  const [exportPct, setExportPct]     = useState(0);
-  const [exportRes, setExportRes]     = useState<Resolution>("720p");
+  const [exporting, setExporting]   = useState(false);
+  const [exportPct, setExportPct]   = useState(0);
   const playerRef               = useRef<PlayerRef>(null);
   const eventSourceRef          = useRef<EventSource | null>(null);
   const requestIdRef            = useRef<string | null>(null);
@@ -191,7 +189,7 @@ export default function App() {
       const res = await fetch(`${renderUrl}/render`, {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-render-secret": import.meta.env.VITE_RENDER_SECRET || "" },
-        body: JSON.stringify({ script, resolution: exportRes }),
+        body: JSON.stringify({ script }),
       });
       if (!res.ok) throw new Error("Render server returned an error");
       const { id, token } = await res.json() as { id: string; token: string };
@@ -270,13 +268,10 @@ export default function App() {
         setScript(null);
         setExporting(false);
         setExportPct(0);
-        setExportRes("720p");
       }}
       onExport={handleExport}
       exporting={exporting}
       exportPct={exportPct}
-      resolution={exportRes}
-      onResolutionChange={setExportRes}
     />
   );
 
