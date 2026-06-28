@@ -60,7 +60,7 @@ export default function App() {
 
   // Warn user when trying to leave during generation
   useEffect(() => {
-    if (stage !== "loading") return;
+    if (stage !== "loading" && !exporting) return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -76,7 +76,7 @@ export default function App() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [stage]);
+  }, [stage, exporting]);
 
   // Clean up EventSource on unmount
   useEffect(() => {
