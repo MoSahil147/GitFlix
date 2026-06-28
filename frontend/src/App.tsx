@@ -184,6 +184,7 @@ export default function App() {
 
   const handleExport = async () => {
     if (exporting || !script) return;
+    blockNavRef.current = true;
     setExporting(true);
     setExportPct(0);
 
