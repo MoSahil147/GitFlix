@@ -45,6 +45,7 @@ export default function App() {
   const playerRef               = useRef<PlayerRef>(null);
   const eventSourceRef          = useRef<EventSource | null>(null);
   const requestIdRef            = useRef<string | null>(null);
+  const exportEsRef             = useRef<EventSource | null>(null);
 
   // Send cancel signal to backend (works even during page unload via sendBeacon)
   const notifyBackendCancel = () => {
@@ -83,6 +84,10 @@ export default function App() {
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
+      }
+      if (exportEsRef.current) {
+        exportEsRef.current.close();
+        exportEsRef.current = null;
       }
       notifyBackendCancel();
     };
@@ -190,6 +195,7 @@ export default function App() {
       const { id, token } = await res.json() as { id: string; token: string };
 
       const es = new EventSource(`${renderUrl}/render/${id}/progress?token=${encodeURIComponent(token)}`);
+      exportEsRef.current = es;
 
       es.onmessage = (e) => {
         const data = JSON.parse(e.data) as { type: string; pct?: number; message?: string };
@@ -198,6 +204,7 @@ export default function App() {
           setExportPct(data.pct ?? 0);
         } else if (data.type === "done") {
           es.close();
+          exportEsRef.current = null;
           const a = document.createElement("a");
           a.href = `${renderUrl}/render/${id}/file?token=${encodeURIComponent(token)}`;
           a.download = "gitflix.mp4";
@@ -206,6 +213,7 @@ export default function App() {
           setExportPct(0);
         } else if (data.type === "error") {
           es.close();
+          exportEsRef.current = null;
           setExporting(false);
           setExportPct(0);
           setError(`Export failed: ${data.message}`);
@@ -215,6 +223,7 @@ export default function App() {
 
       es.onerror = () => {
         es.close();
+        exportEsRef.current = null;
         setExporting(false);
         setExportPct(0);
         setError("Lost connection to render server. Is it running on port 3001?");
@@ -253,7 +262,13 @@ export default function App() {
       playerRef={playerRef}
       totalFrames={TOTAL_FRAMES}
       chapterFrames={CHAPTER_FRAMES}
-      onNewFilm={() => { setStage("input"); setScript(null); }}
+      onNewFilm={() => {
+        if (exportEsRef.current) { exportEsRef.current.close(); exportEsRef.current = null; }
+        setStage("input");
+        setScript(null);
+        setExporting(false);
+        setExportPct(0);
+      }}
       onExport={handleExport}
       exporting={exporting}
       exportPct={exportPct}

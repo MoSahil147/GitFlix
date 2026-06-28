@@ -49,23 +49,24 @@ setInterval(() => {
 let cachedBundle = null;
 
 async function getBundle() {
-  if (cachedBundle) return cachedBundle;
-  console.log('Bundling composition (first time only)...');
-  cachedBundle = await bundle({
-    entryPoint: path.join(__dirname, '../frontend/src/remotion/Root.tsx'),
-    publicDir: path.join(__dirname, '../frontend/public'),
-    webpackOverride: (config) => ({
-      ...config,
-      resolve: {
-        ...config.resolve,
-        modules: [
-          path.join(__dirname, '../frontend/node_modules'),
-          'node_modules',
-        ],
-      },
-    }),
-  });
-  console.log('Bundle ready.');
+  if (!cachedBundle) {
+    console.log('Bundling composition (first time only)...');
+    cachedBundle = bundle({
+      entryPoint: path.join(__dirname, '../frontend/src/remotion/Root.tsx'),
+      publicDir: path.join(__dirname, '../frontend/public'),
+      webpackOverride: (config) => ({
+        ...config,
+        resolve: {
+          ...config.resolve,
+          modules: [
+            path.join(__dirname, '../frontend/node_modules'),
+            'node_modules',
+          ],
+        },
+      }),
+    });
+    cachedBundle.then(() => console.log('Bundle ready.'));
+  }
   return cachedBundle;
 }
 
@@ -158,7 +159,11 @@ app.get('/render/:id/file', checkJobToken, (req, res) => {
 
   const stream = fs.createReadStream(job.outPath);
   stream.pipe(res);
-  stream.on('close', () => {
+  stream.on('error', () => {
+    fs.unlink(job.outPath, () => {});
+    jobs.delete(req.params.id);
+  });
+  res.on('finish', () => {
     fs.unlink(job.outPath, () => {});
     jobs.delete(req.params.id);
   });
