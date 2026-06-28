@@ -46,6 +46,7 @@ export default function App() {
   const eventSourceRef          = useRef<EventSource | null>(null);
   const requestIdRef            = useRef<string | null>(null);
   const exportEsRef             = useRef<EventSource | null>(null);
+  const blockNavRef             = useRef(false);
 
   // Send cancel signal to backend (works even during page unload via sendBeacon)
   const notifyBackendCancel = () => {
@@ -58,26 +59,28 @@ export default function App() {
     }
   };
 
-  // Warn user when trying to leave during generation
+  // Keep ref in sync so the always-on beforeunload handler can check it without timing gaps
   useEffect(() => {
-    if (stage !== "loading" && !exporting) return;
+    blockNavRef.current = stage === "loading" || exporting;
+  }, [stage, exporting]);
 
+  // Register once on mount — avoids the gap between setState and effect re-run
+  useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!blockNavRef.current) return;
       e.preventDefault();
       e.returnValue = "";
     };
-
     const handlePageHide = () => {
-      notifyBackendCancel();
+      if (blockNavRef.current) notifyBackendCancel();
     };
-
     window.addEventListener("beforeunload", handleBeforeUnload);
     window.addEventListener("pagehide", handlePageHide);
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       window.removeEventListener("pagehide", handlePageHide);
     };
-  }, [stage, exporting]);
+  }, []);
 
   // Clean up EventSource on unmount
   useEffect(() => {
