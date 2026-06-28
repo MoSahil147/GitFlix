@@ -8,14 +8,20 @@ const { v4: uuid } = require('uuid');
 
 const app = express();
 
-const ALLOWED_ORIGIN = process.env.FRONTEND_URL || 'http://localhost:5173';
+const ALLOWED_ORIGIN = process.env.FRONTEND_URL || null;
 const RENDER_SECRET = process.env.RENDER_SECRET || '';
 
 if (!RENDER_SECRET && process.env.NODE_ENV === 'production') {
   console.warn('WARNING: RENDER_SECRET is not set — render server is open to anyone');
 }
 
-app.use(cors({ origin: ALLOWED_ORIGIN }));
+// in dev (no FRONTEND_URL set), allow any localhost origin so Vite's dynamic port works
+app.use(cors({
+  origin: ALLOWED_ORIGIN || ((origin, cb) => {
+    if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
+  }),
+}));
 
 const jobs = new Map();
 
@@ -52,7 +58,7 @@ async function getBundle() {
   if (!cachedBundle) {
     console.log('Bundling composition (first time only)...');
     cachedBundle = bundle({
-      entryPoint: path.join(__dirname, '../frontend/src/remotion/Root.tsx'),
+      entryPoint: path.join(__dirname, '../frontend/src/remotion/register.tsx'),
       publicDir: path.join(__dirname, '../frontend/public'),
       webpackOverride: (config) => ({
         ...config,
@@ -71,8 +77,11 @@ async function getBundle() {
 }
 
 app.post('/render', checkSecret, (req, res) => {
-  const { script } = req.body;
+  const { script, resolution } = req.body;
   if (!script) return res.status(400).json({ error: 'script is required' });
+
+  const scaleMap = { '360p': 1/3, '720p': 2/3, '1080p': 1 };
+  const scale = scaleMap[resolution] ?? 2/3;
 
   const id = uuid();
   const token = uuid();
@@ -96,7 +105,7 @@ app.post('/render', checkSecret, (req, res) => {
         codec: 'h264',
         outputLocation: outPath,
         inputProps: { script },
-        scale: 2 / 3,
+        scale,
         onProgress: ({ progress }) => {
           const job = jobs.get(id);
           if (job) job.pct = Math.round(progress * 100);

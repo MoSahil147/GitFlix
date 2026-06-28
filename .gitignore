@@ -8,6 +8,12 @@ start.txt
 # render server
 render-server/node_modules/
 
+# remotion downloads (headless chrome binary)
+.remotion/
+
+# superpowers docs
+docs/superpowers/
+
 # python
 backend/__pycache__/
 backend/.venv/
