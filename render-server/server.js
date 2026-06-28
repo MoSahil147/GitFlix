@@ -105,6 +105,7 @@ app.post('/render', checkSecret, (req, res) => {
         outputLocation: outPath,
         inputProps: { script },
         scale,
+        concurrency: 1,
         onProgress: ({ progress }) => {
           const job = jobs.get(id);
           if (job) job.pct = Math.round(progress * 100);
