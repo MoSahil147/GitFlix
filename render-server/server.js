@@ -178,5 +178,6 @@ app.get('/render/:id/file', checkJobToken, (req, res) => {
 });
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+app.get('/status', (req, res) => res.json({ ok: true }));
 
 app.listen(3001, () => console.log('Render server on http://localhost:3001'));
