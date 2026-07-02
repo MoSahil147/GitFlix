@@ -277,7 +277,7 @@ async def cancel_generation(request_id: str):
     else:
         return {"status": "not_found"}
 
-
+# changed from /health to /status, ad blocker issue over browsers
 @app.get("/status")
 async def health():
     status = _build_config_status()
