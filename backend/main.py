@@ -28,9 +28,7 @@ logging.basicConfig(
 
 log = logging.getLogger("gitflix")
 
-# ---------------------------------------------------------------------------
 # Config — validated once at startup
-# ---------------------------------------------------------------------------
 def _build_config_status() -> dict:
     missing_required = []
     warnings = []
@@ -47,9 +45,7 @@ def _build_config_status() -> dict:
 
 _CONFIG_STATUS = _build_config_status()
 
-# ---------------------------------------------------------------------------
 # Cache: capped at 50 entries, 10-minute TTL.
-# ---------------------------------------------------------------------------
 _CACHE: dict = {}
 _CACHE_TTL = 600
 _CACHE_MAX_SIZE = 50
@@ -74,9 +70,7 @@ def _cache_set(key: tuple, value):
     _CACHE[key] = (value, time.monotonic() + _CACHE_TTL)
 
 
-# ---------------------------------------------------------------------------
 # Rate limiter: sliding window per IP.
-# ---------------------------------------------------------------------------
 class _RateLimiter:
     def __init__(self, max_requests: int = 5, window_seconds: int = 60):
         self.max_requests = max_requests
@@ -101,16 +95,12 @@ _rate_limiter = _RateLimiter(
     window_seconds=int(os.getenv("RATE_LIMIT_WINDOW", "60")),
 )
 
-# ---------------------------------------------------------------------------
 # In-flight tracking and cancel events
-# ---------------------------------------------------------------------------
 _inflight: set[tuple] = set()
 _cancel_events: dict[str, threading.Event] = {}
 _MAX_GENERATION_TIMEOUT = int(os.getenv("GENERATION_TIMEOUT", "180"))
 
-# ---------------------------------------------------------------------------
 # App setup
-# ---------------------------------------------------------------------------
 app = FastAPI(title="GitFlix API")
 
 ALLOWED_ORIGINS = os.getenv(
