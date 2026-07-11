@@ -24,6 +24,9 @@ backend/venv/
 frontend/dist/
 frontend/dist-ssr/
 
+# unused legacy asset
+frontend/Photo.png
+
 # logs
 *.log
 npm-debug.log*

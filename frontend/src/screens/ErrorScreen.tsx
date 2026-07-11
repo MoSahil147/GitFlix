@@ -10,10 +10,10 @@ export default function ErrorScreen({ error, onRetry }: Props) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--bg)" }}>
-      <div style={{ height: 2, background: "linear-gradient(90deg, transparent, #dc2626, transparent)", position: "absolute", top: 0, left: 0, right: 0, zIndex: 11 }} />
+      <div aria-hidden="true" style={{ height: 2, background: "linear-gradient(90deg, transparent, #dc2626, transparent)", position: "absolute", top: 0, left: 0, right: 0, zIndex: 11 }} />
       <NavBar />
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 520, width: "100%", margin: "0 auto", padding: "0 32px" }}>
+      <div role="alert" style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 520, width: "100%", margin: "0 auto", padding: "0 32px" }}>
         <div style={{ fontSize: 12, color: "#dc2626", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 600 }}>
           Production Failed
         </div>
@@ -25,7 +25,7 @@ export default function ErrorScreen({ error, onRetry }: Props) {
           onClick={onRetry}
           style={{ alignSelf: "flex-start", fontSize: 13, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "10px 24px", borderRadius: 6, background: "transparent", cursor: "pointer" }}
         >
-          Try again →
+          Try again <span aria-hidden="true">→</span>
         </button>
       </div>
     </div>

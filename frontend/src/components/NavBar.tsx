@@ -8,8 +8,8 @@ interface NavBarProps {
 export default function NavBar({ contextual, actions }: NavBarProps) {
   return (
     <>
-      <div style={{ height: 2, background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }} />
-      <nav style={{
+      <div aria-hidden="true" style={{ height: 2, background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }} />
+      <nav aria-label="Main" style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
         padding: "16px 48px", borderBottom: "1px solid var(--border)",
         position: "sticky", top: 0, zIndex: 10,
@@ -17,11 +17,11 @@ export default function NavBar({ contextual, actions }: NavBarProps) {
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, letterSpacing: -0.5, color: "var(--text)" }}>
-            GitFlix
+            Git<span style={{ color: "var(--accent)" }}>Flix</span>
           </span>
           {contextual && (
             <>
-              <div style={{ width: 1, height: 14, background: "var(--border-dim)" }} />
+              <div aria-hidden="true" style={{ width: 1, height: 14, background: "var(--border-dim)" }} />
               {contextual}
             </>
           )}

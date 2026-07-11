@@ -163,3 +163,23 @@ Affects: `frontend/src/App.tsx`.
 Decision: stripped decorative comment-divider lines (e.g. banner-style `# ----` separators) from the backend, including `main.py`.
 Reason: they added visual noise without conveying information; code should read cleanly without banner formatting.
 Affects: `backend/` (codebase-wide cleanup).
+
+### 2026-07-11 - Frontend accessibility audit carried out
+Decision: run a full accessibility audit of the frontend covering semantic HTML, ARIA usage, keyboard navigation, focus management, colour contrast, form labelling and screen reader support for the SSE-driven loading and export states.
+Reason: the codebase had no ARIA attributes, labels or live regions anywhere, so the audit was needed to identify concrete, prioritised fixes rather than general advice.
+Affects: `frontend/src/` (all screens and components), findings documented for phased follow-up.
+
+### 2026-07-11 - Error screen made accessible to screen readers
+Decision: add `role="alert"` to the error message container in `ErrorScreen.tsx` so the error is announced immediately when the screen replaces the previous stage, mark the decorative gradient bar as `aria-hidden="true"`, and wrap the trailing arrow glyph in the "Try again" button in an `aria-hidden` span so it is not read aloud.
+Reason: the app switches screens without a real route change and without any focus management, so nothing was previously announced to screen reader users when an error occurred.
+Affects: `frontend/src/screens/ErrorScreen.tsx`.
+
+### 2026-07-11 - NavBar decorative elements hidden and logo styled
+Decision: mark the two purely decorative divider elements in `NavBar.tsx` as `aria-hidden="true"`, add `aria-label="Main"` to the nav landmark, and split the "GitFlix" logo text so "Git" renders in white (`var(--text)`) and "Flix" renders in the yellow accent colour (`var(--accent)`, `#d4a843`).
+Reason: decorative elements were previously exposed to assistive technology with no meaning to convey, and the logo needed a two-colour treatment to distinguish the two halves of the product name.
+Affects: `frontend/src/components/NavBar.tsx`.
+
+### 2026-07-11 - Favicon switched from Photo.png to gitflix.png
+Decision: point the favicon link in `index.html` at `/gitflix.png` instead of `/Photo.png`, and untrack `frontend/Photo.png` from git (kept on disk, added to `.gitignore`) rather than deleting it.
+Reason: `gitflix.png` is the current preview image; `Photo.png` was left over from an earlier version and is no longer referenced anywhere.
+Affects: `frontend/index.html`, `.gitignore`, `frontend/Photo.png` (untracked, not deleted).
