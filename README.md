@@ -17,6 +17,7 @@ This project is open to contribute and improve. You can suggest ideas, report bu
 - Share feedback on features or UX
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, branch naming, commit style, and code guidelines.
+
 ---
 
 ## What it does
