@@ -1,4 +1,5 @@
 import NavBar from "../components/NavBar";
+import { stageStatus } from "../utils";
 
 interface Props {
   repoUrl: string;
@@ -14,12 +15,6 @@ const STAGES = [
   { key: "rendering",   label: "Rendering video",            pct: 95 },
 ];
 
-function stageStatus(stagePct: number, currentPct: number): "done" | "active" | "pending" {
-  if (currentPct >= stagePct + 10) return "done";
-  if (currentPct >= stagePct - 10) return "active";
-  return "pending";
-}
-
 export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
   const repoShort = repoUrl.replace("https://github.com/", "");
 
@@ -27,7 +22,7 @@ export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: "var(--bg)" }}>
       <NavBar contextual={<span style={{ fontSize: 11, color: "var(--text-muted)" }}>{repoShort}</span>} />
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, width: "100%", margin: "0 auto", padding: "0 32px" }}>
+      <main id="main-content" tabIndex={-1} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", maxWidth: 560, width: "100%", margin: "0 auto", padding: "0 32px" }}>
         <div style={{ fontSize: 12, color: "var(--accent)", letterSpacing: 3, textTransform: "uppercase", marginBottom: 16, fontFamily: "var(--font-display)", fontWeight: 600 }}>
           In Production
         </div>
@@ -35,13 +30,18 @@ export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
           Generating<br />your film…
         </h1>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 40 }}>
+        <ul role="list" style={{ display: "flex", flexDirection: "column", gap: 18, marginBottom: 40, listStyle: "none" }}>
           {STAGES.map(stage => {
             const status = stageStatus(stage.pct, progress.pct);
             return (
-              <div key={stage.key} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <li
+                key={stage.key}
+                aria-current={status === "active" ? "step" : undefined}
+                style={{ display: "flex", alignItems: "center", gap: 14 }}
+              >
                 <div
                   className={status === "active" ? "stage-dot-active" : undefined}
+                  aria-hidden="true"
                   style={{
                     width: 8, height: 8, borderRadius: "50%", flexShrink: 0,
                     background: status === "pending" ? "transparent" : "var(--accent)",
@@ -54,14 +54,22 @@ export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
                   color: status === "active" ? "var(--text-active)" : status === "done" ? "var(--text-mid)" : "var(--text-muted)",
                 }}>
                   {stage.label}
+                  {status === "done" && <span className="sr-only"> — complete</span>}
                 </span>
-                {status === "done" && <span style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-mid)" }}>✓</span>}
-              </div>
+                {status === "done" && <span aria-hidden="true" style={{ marginLeft: "auto", fontSize: 11, color: "var(--text-mid)" }}>✓</span>}
+              </li>
             );
           })}
-        </div>
+        </ul>
 
-        <div style={{ width: "100%", height: 1, background: "var(--border)", borderRadius: 1, marginBottom: 10 }}>
+        <div
+          role="progressbar"
+          aria-valuenow={progress.pct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Generation progress"
+          style={{ width: "100%", height: 2, background: "var(--border-dim)", borderRadius: 2, marginBottom: 10 }}
+        >
           <div style={{
             height: "100%", width: `${progress.pct}%`,
             background: "linear-gradient(90deg, var(--accent), var(--text-active))",
@@ -70,22 +78,22 @@ export default function LoadingScreen({ repoUrl, progress, onCancel }: Props) {
           }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{progress.msg}</span>
-          <span style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600 }}>{progress.pct}%</span>
+          <span role="status" aria-live="polite" aria-atomic="true" style={{ fontSize: 11, color: "var(--text-muted)" }}>{progress.msg}</span>
+          <span aria-hidden="true" style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600 }}>{progress.pct}%</span>
         </div>
-      </div>
+      </main>
 
-      <div style={{ borderTop: "1px solid var(--border)", padding: "16px 48px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Usually ~60s on average - larger repositories may take longer</span>
+      <footer style={{ borderTop: "1px solid var(--border)", padding: "16px 48px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 12, color: "var(--text-muted)" }}>Usually around 60 seconds — larger repositories may take longer</span>
         <button
+          type="button"
+          className="btn-cancel"
           onClick={onCancel}
-          style={{ fontSize: 12, color: "var(--cancel)", border: "1px solid var(--cancel-dim)", padding: "8px 20px", borderRadius: 6, background: "var(--cancel-bg)", cursor: "pointer", letterSpacing: 0.3 }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--cancel)"; e.currentTarget.style.background = "var(--cancel)"; e.currentTarget.style.color = "#fff"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--cancel-dim)"; e.currentTarget.style.background = "var(--cancel-bg)"; e.currentTarget.style.color = "var(--cancel)"; }}
+          title="Stop generating and return to the home screen"
         >
-          ✕ Cancel generation
+          <span aria-hidden="true">✕</span> Cancel generation
         </button>
-      </div>
+      </footer>
     </div>
   );
 }

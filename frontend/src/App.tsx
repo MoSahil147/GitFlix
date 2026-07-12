@@ -9,6 +9,8 @@ import ErrorScreen   from "./screens/ErrorScreen";
 
 const API = (import.meta.env.VITE_API_URL ?? "").trim() || (import.meta.env.DEV ? "/api" : "");
 
+const EXPORT_ERROR = "Export failed. Try again, or use screen recording as a workaround.";
+
 // cumulative start frame for each chapter
 const CHAPTER_IDS = ["S01","S02","S03","S04","S05","S06","S07"] as const;
 
@@ -47,6 +49,7 @@ export default function App() {
   const requestIdRef            = useRef<string | null>(null);
   const exportEsRef             = useRef<EventSource | null>(null);
   const blockNavRef             = useRef(false);
+  const mountedRef              = useRef(false);
 
   // Send cancel signal to backend (works even during page unload via sendBeacon)
   const notifyBackendCancel = () => {
@@ -96,6 +99,21 @@ export default function App() {
       notifyBackendCancel();
     };
   }, []);
+
+  useEffect(() => {
+    const map: Record<Stage, string> = {
+      input:   "GitFlix — Every repo has a story",
+      loading: `Generating — ${repoUrl.replace("https://github.com/", "") || "film"} | GitFlix`,
+      preview: `${script?.repo_name ?? "Preview"} | GitFlix`,
+      error:   "Error | GitFlix",
+    };
+    document.title = map[stage];
+  }, [stage, repoUrl, script]);
+
+  useEffect(() => {
+    if (!mountedRef.current) { mountedRef.current = true; return; }
+    (document.getElementById("main-content") as HTMLElement | null)?.focus();
+  }, [stage]);
 
   const handleCancel = () => {
     if (eventSourceRef.current) {
@@ -221,7 +239,7 @@ export default function App() {
           exportEsRef.current = null;
           setExporting(false);
           setExportPct(0);
-          setError("Oops! Our server is a bit overworked and couldn't finish rendering your video. Pro tip: Screen recording is a quick workaround if you need it right away!");
+          setError(EXPORT_ERROR);
           setStage("error");
         }
       };
@@ -231,17 +249,17 @@ export default function App() {
         exportEsRef.current = null;
         setExporting(false);
         setExportPct(0);
-        setError("Oops! Our server is a bit overworked and couldn't finish rendering your video. Pro tip: Screen recording is a quick workaround if you need it right away!");
+        setError(EXPORT_ERROR);
         setStage("error");
       };
     } catch {
       setExporting(false);
-      setError("Oops! Our server is a bit overworked and couldn't finish rendering your video. Pro tip: Screen recording is a quick workaround if you need it right away!");
+      setError(EXPORT_ERROR);
       setStage("error");
     }
   };
 
-  if (stage === "input") return (
+  const screen = stage === "input" ? (
     <InputScreen
       repoUrl={repoUrl}
       tone={tone}
@@ -251,17 +269,13 @@ export default function App() {
       onToneChange={setTone}
       onGenerate={handleGenerate}
     />
-  );
-
-  if (stage === "loading") return (
+  ) : stage === "loading" ? (
     <LoadingScreen
       repoUrl={repoUrl}
       progress={progress}
       onCancel={handleCancel}
     />
-  );
-
-  if (stage === "preview" && script) return (
+  ) : stage === "preview" && script ? (
     <PreviewScreen
       script={script}
       playerRef={playerRef}
@@ -278,12 +292,17 @@ export default function App() {
       exporting={exporting}
       exportPct={exportPct}
     />
-  );
-
-  return (
+  ) : (
     <ErrorScreen
       error={error}
       onRetry={() => { setStage("input"); setError(""); }}
     />
+  );
+
+  return (
+    <>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+      {screen}
+    </>
   );
 }
