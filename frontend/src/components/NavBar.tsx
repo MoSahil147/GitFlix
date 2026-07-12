@@ -7,7 +7,7 @@ interface NavBarProps {
 
 export default function NavBar({ contextual, actions }: NavBarProps) {
   return (
-    <>
+    <header>
       <div aria-hidden="true" style={{ height: 2, background: "linear-gradient(90deg, transparent, var(--accent), transparent)" }} />
       <nav aria-label="Main" style={{
         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -16,9 +16,11 @@ export default function NavBar({ contextual, actions }: NavBarProps) {
         background: "#050308ee", backdropFilter: "blur(12px)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, letterSpacing: -0.5, color: "var(--text)" }}>
-            Git<span style={{ color: "var(--accent)" }}>Flix</span>
-          </span>
+          <a href="/" aria-label="GitFlix home" title="Go to GitFlix home" style={{ textDecoration: "none" }}>
+            <span style={{ fontFamily: "var(--font-display)", fontSize: 15, fontWeight: 800, letterSpacing: -0.5, color: "var(--text)" }}>
+              Git<span style={{ color: "var(--accent)" }}>Flix</span>
+            </span>
+          </a>
           {contextual && (
             <>
               <div aria-hidden="true" style={{ width: 1, height: 14, background: "var(--border-dim)" }} />
@@ -28,6 +30,6 @@ export default function NavBar({ contextual, actions }: NavBarProps) {
         </div>
         {actions && <div style={{ display: "flex", gap: 8 }}>{actions}</div>}
       </nav>
-    </>
+    </header>
   );
 }

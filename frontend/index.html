@@ -2,15 +2,68 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#050308" />
+    <meta name="application-name" content="GitFlix" />
+    <meta name="description" content="Turn any public GitHub repository into a cinematic documentary video — commit history, contributors, and key moments told as a seven-scene film." />
+    <meta name="author" content="GitFlix" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://gitflix.netlify.app/" />
+
+    <meta property="og:type"         content="website" />
+    <meta property="og:url"          content="https://gitflix.netlify.app/" />
+    <meta property="og:site_name"    content="GitFlix" />
+    <meta property="og:locale"       content="en_US" />
+    <meta property="og:title"        content="GitFlix — Every repo has a story" />
+    <meta property="og:description"  content="Turn any public GitHub repository into a cinematic documentary video." />
+    <meta property="og:image"        content="https://gitflix.netlify.app/og-image.png" />
+    <meta property="og:image:width"  content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt"    content="GitFlix — cinematic documentary videos generated from GitHub repositories." />
+
+    <meta name="twitter:card"        content="summary_large_image" />
+    <meta name="twitter:title"       content="GitFlix — Every repo has a story" />
+    <meta name="twitter:description" content="Turn any public GitHub repository into a cinematic documentary video." />
+    <meta name="twitter:image"       content="https://gitflix.netlify.app/og-image.png" />
+    <meta name="twitter:image:alt"   content="GitFlix — cinematic documentary videos generated from GitHub repositories." />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "GitFlix",
+      "description": "Turn any public GitHub repository into a cinematic documentary video. Commit history, contributors, and key moments told as a seven-scene animated film.",
+      "url": "https://gitflix.netlify.app",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+    </script>
+
+    <title>GitFlix — Every repo has a story</title>
     <link rel="icon" type="image/png" href="/gitflix.png" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GitFlix</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <noscript>
+      <div style="padding:2rem;max-width:480px;margin:4rem auto;text-align:center;font-family:system-ui,sans-serif;line-height:1.6">
+        <h1 style="font-size:1.25rem;font-weight:600;margin-bottom:0.75rem">GitFlix</h1>
+        <p style="color:#aaa;margin-bottom:1rem">
+          GitFlix turns any public GitHub repository into a cinematic documentary video.
+        </p>
+        <p style="color:#777;font-size:0.875rem">
+          JavaScript is required to run this app. Please enable it in your browser settings and reload the page.
+        </p>
+      </div>
+    </noscript>
   </body>
 </html>

@@ -10,11 +10,14 @@ GitFlix turns any public GitHub repository into a cinematic documentary, complet
 
 ## Open for contributions
 
-This project is open to contribute and improve. You can suggest ideas report bugs or request features.
+This project is open to contribute and improve. You can suggest ideas, report bugs, or request features.
 
-- Open an issue for bugs or ideas  
-- Submit a pull request with improvements  
+- Open an issue for bugs or ideas
+- Submit a pull request with improvements
 - Share feedback on features or UX
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup instructions, branch naming, commit style, and code guidelines.
+
 ---
 
 ## What it does
@@ -110,7 +113,8 @@ npm run dev
 
 Open `http://localhost:6767` in your browser.
 
-> **Note:** If port 6767 is occupied (macOS reserves it for a system process on some machines), Vite will automatically move to 6768. Check the terminal output for the exact URL.
+> [!NOTE]
+> If port 6767 is occupied (macOS reserves it for a system process on some machines), Vite will automatically move to 6768. Check the terminal output for the exact URL.
 
 ---
 
@@ -132,7 +136,8 @@ Open `http://localhost:6767` in your browser.
 | `POST` | `/generate/cancel` | Cancels an in-progress generation |
 | `GET` | `/status` | Health check — returns `ok` or `degraded` with missing config details |
 
-> **Note for contributors:** This endpoint is intentionally named `/status` and not `/health`. Browser-based ad blockers silently block requests to URLs containing the word `health` (treating them as tracking or analytics calls) before the request ever leaves the browser. This caused the frontend to report the backend as unreachable even when the server was running perfectly — no backend logs, no CORS error, just a silent client-side block. Renaming to `/status` fixed it immediately.
+> [!NOTE]
+> **For contributors:** This endpoint is intentionally named `/status` and not `/health`. Browser-based ad blockers silently block requests to URLs containing the word `health` (treating them as tracking or analytics calls) before the request ever leaves the browser.<br>This caused the frontend to report the backend as unreachable even when the server was running perfectly — no backend logs, no CORS error, just a silent client-side block. Renaming to `/status` fixed it immediately.
 
 ### SSE event shape
 
