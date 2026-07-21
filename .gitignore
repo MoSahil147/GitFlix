@@ -27,6 +27,9 @@ frontend/dist-ssr/
 # unused legacy asset
 frontend/Photo.png
 
+# raw video source (large, not needed in repo)
+*.mp4
+
 # logs
 *.log
 npm-debug.log*
