@@ -189,6 +189,17 @@ npm test
 
 ---
 
+## Accessibility (WCAG AA)
+
+The `InputScreen` tone selector is a `role="radiogroup"` with roving tabindex (`ArrowRight`/`ArrowLeft`/`ArrowUp`/`ArrowDown` moves both focus and selection, only the checked option is a tab stop), and a skip-to-content link (`.skip-link` in `index.css`) precedes the nav bar. See `PR #24` for the full audit.
+
+Before/after keyboard-navigation comparison (pre-a11y baseline vs. this work):
+https://github.com/user-attachments/assets/76cac055-3192-4941-94d3-095baffc65c3
+
+When adding new interactive elements, keep them keyboard-operable (real `<button>`/native semantics, or explicit `role` + key handlers) with a visible `:focus-visible` style — see `[role="radiogroup"] button:focus-visible` and `.repo-input:focus-visible` in `frontend/src/index.css` for the existing pattern.
+
+---
+
 ## Building
 
 ### Backend
