@@ -45,7 +45,7 @@ Each scene has fade transitions, per-scene subtitles and a background score that
 **Backend**
 - [FastAPI](https://fastapi.tiangolo.com/) — REST API and Server-Sent Events streaming
 - [PyGitHub](https://pygithub.readthedocs.io/) — GitHub data ingestion
-- [LangChain + Groq](https://python.langchain.com/) — LLM-powered narration via `llama-3.1-8b-instant`
+- [LangChain + Groq](https://python.langchain.com/) — LLM-powered narration via `openai/gpt-oss-120b`
 - [Pydantic v2](https://docs.pydantic.dev/) — typed data schemas throughout
 
 **Frontend**
