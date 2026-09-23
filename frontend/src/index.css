@@ -2,19 +2,20 @@
   --bg:           #050308;
   --surface:      #0a0810;
   --border:       #1a1510;
-  --border-dim:   #5a4828;
+  --border-dim:   #7a5c32;
   --accent:       #d4a843;
   --accent-glow:  #d4a84340;
   --accent-dim:   #d4a84315;
   --text:         #ffffff;
   --text-muted:   #c4aa72;
-  --text-mid:     #8a7258;
+  --text-mid:     #9a7f62;
   --text-active:  #f0d280;
   --cancel:       #c45a5a;
   --cancel-dim:   #6e2e2e;
   --cancel-bg:    rgba(160, 50, 50, 0.07);
   --font-display: 'Space Grotesk', sans-serif;
   --font-body:    'Inter', sans-serif;
+  --ease-out:     cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -23,16 +24,64 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-body);
+  line-height: 1.5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
 #root { min-height: 100vh; display: flex; flex-direction: column; }
 
+/* Skip to main content */
+.skip-link {
+  position: absolute;
+  top: 0.5rem;
+  left: 1rem;
+  z-index: 999;
+  padding: 0.5rem 1rem;
+  background: var(--accent);
+  color: #1a0e00;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 4px;
+  text-decoration: none;
+  transform: translateY(calc(-100% - 0.5rem - 4px));
+  transition: transform 0.12s var(--ease-out);
+}
+.skip-link:focus { transform: translateY(0); }
+
+/* Suppress focus ring on programmatic focus (skip link target) */
+#main-content:focus { outline: none; }
+
+/* Keyboard focus ring for all interactive elements */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* Tone buttons sit inside overflow:hidden — use inset ring instead of external outline */
+[role="radiogroup"] button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Visually hidden but available to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 button {
   font-family: var(--font-body);
   cursor: pointer;
-  transition: opacity 0.12s ease, transform 0.1s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+  transition: transform 0.1s var(--ease-out), border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
 button:active { transform: scale(0.97); }
 
@@ -41,15 +90,22 @@ input { font-family: var(--font-body); }
 .repo-input {
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-.repo-input:focus {
+.repo-input:focus-visible {
   outline: none;
   border-color: var(--accent) !important;
   box-shadow: 0 0 0 2px var(--accent-glow);
 }
 
+abbr[title] { cursor: help; }
+
+::selection {
+  background-color: #d4a84350;
+  color: inherit;
+}
+
 @keyframes stage-pulse {
-  0%, 100% { box-shadow: 0 0 6px 1px #d4a84388; opacity: 1; }
-  50%       { box-shadow: 0 0 18px 4px #d4a843cc; opacity: 0.7; }
+  0%, 100% { transform: scale(1);   opacity: 1; }
+  50%       { transform: scale(1.8); opacity: 0.5; }
 }
 
 .stage-dot-active {
@@ -59,11 +115,92 @@ input { font-family: var(--font-body); }
 .btn-new-film {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
 }
-.btn-new-film:hover {
-  border-color: var(--accent) !important;
-  color: var(--accent) !important;
-  box-shadow: 0 0 10px 2px var(--accent-glow);
-}
 .btn-new-film:active {
   box-shadow: 0 0 18px 4px var(--accent-glow);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-new-film:hover {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    box-shadow: 0 0 10px 2px var(--accent-glow);
+  }
+}
+
+.btn-chapter {
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px solid var(--border-dim);
+  padding: 5px 14px;
+  border-radius: 4px;
+  background: transparent;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-chapter:hover {
+    border-color: var(--accent);
+    color: var(--text-active);
+  }
+}
+
+.btn-cancel {
+  font-size: 12px;
+  color: var(--cancel);
+  border: 1px solid var(--cancel-dim);
+  padding: 8px 20px;
+  border-radius: 6px;
+  background: var(--cancel-bg);
+  letter-spacing: 0.3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-cancel:hover {
+    border-color: var(--cancel);
+    background: var(--cancel);
+    color: #fff;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --border-dim: #b08840;
+    --border:     #4a3820;
+    --text-mid:   #c4aa72;
+  }
+}
+
+@media (forced-colors: active) {
+  h1 {
+    color: CanvasText;
+    -webkit-text-fill-color: CanvasText;
+    background-image: none;
+    background-clip: border-box;
+    -webkit-background-clip: border-box;
+  }
+
+  .skip-link:focus {
+    background: Highlight;
+    color: HighlightText;
+    forced-color-adjust: none;
+  }
+
+  [role="progressbar"] > div {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+
+  .stage-dot-active {
+    border: 2px solid Highlight;
+  }
 }

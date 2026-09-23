@@ -56,7 +56,7 @@ Start dev server:
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5173`.
+Frontend runs at `http://localhost:6767`.
 
 ---
 
@@ -74,6 +74,7 @@ Frontend runs at `http://localhost:5173`.
   - `npm run dev` — start dev server
   - `npm run build` — production build (includes TypeScript check)
   - `npm run lint` — run ESLint
+  - `npm test` — run Vitest test suite
   - `npm run preview` — preview production build
 
 ### Code Style
@@ -157,13 +158,13 @@ App.tsx -> InputScreen -> LoadingScreen -> PreviewScreen
 ## Testing
 
 ### Backend
-32 tests across 4 files, all runnable without network access or API keys:
+35 tests across 4 files, all runnable without network access or API keys:
 
 | File | Coverage |
 |------|----------|
 | `test_schemas.py` | Pydantic model validation (7 tests) |
 | `test_ingestion.py` | URL normalisation and validation (8 tests) |
-| `test_analytics.py` | Analytics engine — hero commits, character roles, ghost files, plot twists (12 tests) |
+| `test_analytics.py` | Analytics engine — hero commits, character roles, ghost files, plot twists, arc summaries (15 tests) |
 | `test_main.py` | FastAPI endpoints — `/status` and `/generate/cancel` (5 tests) |
 
 Run all tests:
@@ -173,7 +174,29 @@ uv run python -m pytest
 ```
 
 ### Frontend
-No automated tests currently configured. Manual testing via dev server.
+27 tests across 2 files, runnable with `npm test`:
+
+| File | Coverage |
+|------|----------|
+| `src/utils.test.ts` | `stageStatus()` boundary cases and `sanitizeError()` edge cases (13 tests) |
+| `src/screens/__tests__/InputScreen.test.tsx` | ARIA radio group navigation, aria-checked, roving tabindex, error display, generate button state (14 tests) |
+
+Run all tests:
+```bash
+cd frontend
+npm test
+```
+
+---
+
+## Accessibility (WCAG AA)
+
+The `InputScreen` tone selector is a `role="radiogroup"` with roving tabindex (`ArrowRight`/`ArrowLeft`/`ArrowUp`/`ArrowDown` moves both focus and selection, only the checked option is a tab stop), and a skip-to-content link (`.skip-link` in `index.css`) precedes the nav bar. See `PR #24` for the full audit.
+
+Before/after keyboard-navigation comparison (pre-a11y baseline vs. this work):
+https://github.com/user-attachments/assets/76cac055-3192-4941-94d3-095baffc65c3
+
+When adding new interactive elements, keep them keyboard-operable (real `<button>`/native semantics, or explicit `role` + key handlers) with a visible `:focus-visible` style — see `[role="radiogroup"] button:focus-visible` and `.repo-input:focus-visible` in `frontend/src/index.css` for the existing pattern.
 
 ---
 
@@ -298,13 +321,18 @@ GitFlix/
     │   ├── App.tsx                  # State machine: input / loading / preview / error
     │   ├── main.tsx                 # Entry point
     │   ├── index.css                # CSS custom properties (warm amber theme)
+    │   ├── utils.ts                 # Pure utilities: stageStatus, sanitizeError
+    │   ├── test-setup.ts            # Vitest + Testing Library global setup
+    │   ├── utils.test.ts            # Tests for utils.ts
     │   ├── components/
     │   │   └── NavBar.tsx           # Shared top navigation bar
     │   ├── screens/
     │   │   ├── InputScreen.tsx      # Repo URL input and tone selector
     │   │   ├── LoadingScreen.tsx    # SSE progress display with cancel button
     │   │   ├── PreviewScreen.tsx    # Remotion player with chapter navigation
-    │   │   └── ErrorScreen.tsx      # Error display with retry
+    │   │   ├── ErrorScreen.tsx      # Error display with retry
+    │   │   └── __tests__/
+    │   │       └── InputScreen.test.tsx  # Tone radio group and form tests
     │   └── remotion/
     │       ├── constants.ts         # FPS and SCENE_DURATIONS (single source of truth)
     │       ├── types.ts             # ScriptJSON and related TypeScript types
@@ -356,6 +384,11 @@ cd frontend && npm run dev
 cd backend && uv run python -m pytest
 ```
 
+### Run Frontend Tests
+```bash
+cd frontend && npm test
+```
+
 ### Test a Repository
 1. Open `http://localhost:5173`
 2. Enter a GitHub URL (e.g., `https://github.com/facebook/react`)
@@ -371,7 +404,6 @@ cd backend && uv run python -m pytest
 - Groq API rate limits: 7 LLM calls per generation (one per scene)
 - In-memory cache and rate limiter reset on server restart (no persistent storage)
 - No database
-- Frontend has no automated tests
 
 ---
 

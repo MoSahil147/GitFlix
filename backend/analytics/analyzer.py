@@ -53,7 +53,7 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
     # resample("W") buckets every commit into its calendar week (week-ending Sunday)
     # .count() counts how many commits landed in each bucket
     # reset_index() brings "week" back as a normal column (not the index)
-    # sha = Secure Hash algo, its teh 8 random looking chars a3fb12c, we are counting this because sha is never empty never null
+    # SHA = Secure Hash algo, its the 8 random looking chars a3fb12c, we are counting this because SHA is never empty never null
     weekly = commits_df["sha"].resample("W").count().reset_index()
     weekly.columns = ["week", "count"]
 
@@ -122,7 +122,7 @@ def run_analytics(repo_data: RepoData) -> dict[str, Any]:
         # Did this person start contributing after the repo's halfway point?
         joined_late = pd.Timestamp(contrib.first_commit) > repo_midpoint
 
-        # Assign a role based on behaviour (charecter time)
+        # Assign a role based on behaviour (character time)
         if age_days > 180 and contrib.total_commits > 5:
             # Disappeared 180+ days ago but did real work — they are a ghost
             role = "ghost"

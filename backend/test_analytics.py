@@ -180,3 +180,36 @@ def test_contributor_count_matches_contributors_list():
     contributors = [_contributor("alice", 1, 100, 100), _contributor("bob", 1, 90, 90)]
     result = run_analytics(_repo(commits, contributors))
     assert result["contributor_count"] == 2
+
+
+# --- arc summaries ---
+
+def test_arc_summary_includes_login():
+    commits = [_commit(f"{i:08d}", "alice", 200 - i) for i in range(20)]
+    result = run_analytics(_repo(commits, [_contributor("alice", 20, 220, 10)]))
+    assert "alice" in result["characters"][0]["arc_summary"]
+
+
+def test_arc_summary_includes_commit_count():
+    commits = [_commit(f"{i:08d}", "alice", 200 - i) for i in range(20)]
+    result = run_analytics(_repo(commits, [_contributor("alice", 20, 220, 10)]))
+    assert "20" in result["characters"][0]["arc_summary"]
+
+
+def test_arc_summary_is_non_empty_for_all_roles():
+    commits = (
+        [_commit(f"a{i:07d}", "alice", 200 - i)     for i in range(20)]   # hero
+        + [_commit(f"b{i:07d}", "bob",   350 - i)   for i in range(8)]    # ghost (last commit 342+ days ago)
+        + [_commit(f"c{i:07d}", "carol", 50 - i)    for i in range(12)]   # late joiner
+        + [_commit(f"d{i:07d}", "dave",  150 - i)   for i in range(6)]    # consistent
+    )
+    contributors = [
+        _contributor("alice", 20, 220, 10),
+        _contributor("bob",   8,  360, 342),
+        _contributor("carol", 12, 60,  5),
+        _contributor("dave",  6,  160, 10),
+    ]
+    result = run_analytics(_repo(commits, contributors))
+    for char in result["characters"]:
+        assert isinstance(char["arc_summary"], str)
+        assert len(char["arc_summary"]) > 0

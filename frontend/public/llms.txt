@@ -1,0 +1,41 @@
+# GitFlix
+
+> Turn any public GitHub repository into a cinematic documentary video.
+
+GitFlix analyses a repository's commit history and generates a seven-scene
+animated film: contributors become characters, big commit weeks become plot
+twists, and the codebase's story is narrated by an LLM and set to music.
+No data is stored — each generation is ephemeral and streamed in real time.
+
+## How to use
+
+Paste a public GitHub URL (e.g. https://github.com/react/react), choose
+a tone (epic, documentary, or casual), and click Generate Film. The result
+is a ~2.5-minute video you can watch in the browser or export as MP4.
+
+## Scenes
+
+- S01 Origin: repository name, creation date, and first contributor
+- S02 Cast: top contributors with roles (hero, ghost, late joiner, backbone)
+- S03 The Rise: commit volume over time as a donut/arc chart
+- S04 Plot Twist: the busiest week in the repo's history
+- S05 Ghost Files: files that haven't been touched in 6+ months
+- S06 Hero Commit: the single largest diff ever merged
+- S07 Finale: summary stats — total commits, contributors, days active
+
+## Tones
+
+- epic: dramatic, high-stakes narration
+- documentary: calm, factual, David Attenborough-style
+- casual: lighthearted and conversational
+
+## Technical limits
+
+- Public GitHub repositories only (private repos require a token on the backend)
+- Large repositories (10,000+ commits) may take longer than the ~60s average
+- Export to MP4 requires a separate render server (hosted on Render free tier)
+
+## Source
+
+- Live site: https://gitflix.netlify.app
+- GitHub repository: https://github.com/cr2007/GitFlix

@@ -5,14 +5,15 @@ import { GitflixVideo } from "../remotion/GitflixVideo";
 import { FPS } from "../remotion/constants";
 import type { ScriptJSON } from "../remotion/types";
 import NavBar from "../components/NavBar";
+
 const CHAPTERS = [
-  { id: "S01", label: "Origin" },
-  { id: "S02", label: "Cast" },
-  { id: "S03", label: "The Rise" },
-  { id: "S04", label: "Plot Twist" },
-  { id: "S05", label: "Ghost Files" },
-  { id: "S06", label: "Hero Commit" },
-  { id: "S07", label: "Finale" },
+  { id: "S01", label: "Origin",      title: "Repository birth — creation date, name, and first contributor" },
+  { id: "S02", label: "Cast",        title: "Top contributors and their roles: hero, ghost, late joiner, backbone" },
+  { id: "S03", label: "The Rise",    title: "Commit volume over time — the repository's growth story" },
+  { id: "S04", label: "Plot Twist",  title: "The single busiest week in the repository's history" },
+  { id: "S05", label: "Ghost Files", title: "Files that haven't been touched in over 6 months" },
+  { id: "S06", label: "Hero Commit", title: "The single largest diff ever merged into this repository" },
+  { id: "S07", label: "Finale",      title: "Summary: total commits, contributors, and days active" },
 ];
 
 interface Props {
@@ -33,25 +34,29 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
         contextual={
           <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
             {script.repo_name}
-            <span style={{ margin: "0 6px", color: "var(--border-dim)" }}>·</span>
+            <span aria-hidden="true" style={{ margin: "0 6px", color: "var(--border-dim)" }}>·</span>
             {script.total_commits} commits
-            <span style={{ margin: "0 6px", color: "var(--border-dim)" }}>·</span>
+            <span aria-hidden="true" style={{ margin: "0 6px", color: "var(--border-dim)" }}>·</span>
             {script.contributor_count} contributors
           </span>
         }
         actions={
           <>
-            <button onClick={onNewFilm} className="btn-new-film" style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
-              ← New Film
+            <button type="button" onClick={onNewFilm} className="btn-new-film" title="Discard this film and generate a new one" style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "8px 18px", borderRadius: 6, background: "transparent", cursor: "pointer" }}>
+              <span aria-hidden="true">←</span> New Film
             </button>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
               <button
+                type="button"
                 onClick={onExport}
                 disabled={exporting}
+                aria-busy={exporting}
+                aria-label={exporting ? `Exporting video, ${exportPct}% complete` : "Export MP4"}
+                title={exporting ? "Export in progress — please wait" : "Download this film as an MP4 video file"}
                 style={{
                   fontSize: 12,
                   fontWeight: 700,
-                  color: "#fff",
+                  color: "#1a0e00",
                   background: exporting ? "var(--text-mid)" : "var(--accent)",
                   border: "none",
                   padding: "8px 18px",
@@ -61,11 +66,11 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
                   transition: "background 0.2s ease",
                 }}
               >
-                {exporting ? `Rendering… ${exportPct}%` : "Export MP4"}
+                {exporting ? `Rendering ${exportPct}%` : "Export MP4"}
               </button>
               {exporting && (
-                <span style={{ fontSize: 10, color: "var(--text-mid)" }}>
-                  Video export may take longer than usual, as this service currently runs on a free hosting tier.
+                <span role="status" style={{ fontSize: 10, color: "var(--text-mid)" }}>
+                  Large renders may take several minutes.
                 </span>
               )}
             </div>
@@ -73,34 +78,43 @@ export default function PreviewScreen({ script, playerRef, totalFrames, chapterF
         }
       />
 
-      <div style={{ background: "#000", width: "100%" }}>
-        <Player
-          ref={playerRef}
-          component={GitflixVideo}
-          inputProps={{ script }}
-          durationInFrames={totalFrames}
-          fps={FPS}
-          compositionWidth={1920}
-          compositionHeight={1080}
-          style={{ width: "100%", maxHeight: "80vh" }}
-          controls
-        />
-      </div>
+      <main id="main-content" tabIndex={-1} aria-label="Film preview" style={{ background: "#000", width: "100%" }}>
+        <figure style={{ margin: 0 }}>
+          <figcaption className="sr-only">
+            Generated film for {script.repo_name}. Press Space to play or pause, and the Left and Right arrow keys to seek through the video.
+          </figcaption>
+          <Player
+            ref={playerRef}
+            component={GitflixVideo}
+            inputProps={{ script }}
+            durationInFrames={totalFrames}
+            fps={FPS}
+            compositionWidth={1920}
+            compositionHeight={1080}
+            style={{ width: "100%", maxHeight: "80vh" }}
+            controls
+          />
+        </figure>
+      </main>
 
-      <div style={{ borderTop: "1px solid var(--border)", padding: "14px 48px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", background: "var(--bg)" }}>
-        <span style={{ fontSize: 10, color: "var(--text-mid)", textTransform: "uppercase", letterSpacing: 3, marginRight: 8 }}>Chapters</span>
-        {CHAPTERS.map(ch => (
-          <button
-            key={ch.id}
-            onClick={() => playerRef.current?.seekTo(chapterFrames[ch.id])}
-            style={{ fontSize: 12, color: "var(--text-muted)", border: "1px solid var(--border-dim)", padding: "5px 14px", borderRadius: 4, background: "transparent", letterSpacing: 0.2, cursor: "pointer" }}
-            onMouseEnter={e => { (e.currentTarget.style.borderColor = "var(--accent)"); (e.currentTarget.style.color = "var(--text-active)"); }}
-            onMouseLeave={e => { (e.currentTarget.style.borderColor = "var(--border-dim)"); (e.currentTarget.style.color = "var(--text-muted)"); }}
-          >
-            {ch.label}
-          </button>
-        ))}
-      </div>
+      <nav aria-label="Chapters" style={{ borderTop: "1px solid var(--border)", padding: "14px 48px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", background: "var(--bg)" }}>
+        <span aria-hidden="true" style={{ fontSize: 10, color: "var(--text-mid)", textTransform: "uppercase", letterSpacing: 3, marginRight: 8 }}>Chapters</span>
+        <ul role="list" style={{ display: "flex", gap: 8, flexWrap: "wrap", listStyle: "none" }}>
+          {CHAPTERS.map(ch => (
+            <li key={ch.id}>
+              <button
+                type="button"
+                className="btn-chapter"
+                onClick={() => playerRef.current?.seekTo(chapterFrames[ch.id])}
+                aria-label={`Jump to ${ch.label}`}
+                title={ch.title}
+              >
+                {ch.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </div>
   );
 }

@@ -165,7 +165,7 @@ def fetch_repo_data(
                 ))
 
         # General stats for all scanned commits
-        # first to detct late joiners, last to detect ghosts!
+        # first to detect late joiners, last to detect ghosts!
         m = contrib_map[author_login]
         m["commits"] += 1
         m["months"].add(timestamp.strftime("%Y-%m"))
