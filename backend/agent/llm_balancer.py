@@ -2,8 +2,8 @@
 LLM Load Balancer — round-robin across Groq models with automatic fallback.
 
 Model priority order:
-  1. llama-3.1-8b-instant    (fast, default)
-  2. llama-3.3-70b-versatile (slower but more capable, used when 8b fails)
+  1. openai/gpt-oss-120b (best quality, default)
+  2. openai/gpt-oss-20b  (faster, used when 120b fails)
 
 Configure via .env:
   GROQ_API_KEY=...   # required
@@ -15,8 +15,8 @@ import os
 from langchain_groq import ChatGroq
 
 _MODELS = [
-    "llama-3.1-8b-instant",
-    "llama-3.3-70b-versatile",
+    "openai/gpt-oss-120b",
+    "openai/gpt-oss-20b",
 ]
 
 

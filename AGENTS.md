@@ -111,8 +111,8 @@ GitHub URL -> Ingestion -> Analytics -> Agent -> SSE Stream -> Frontend
    - Builds a `ScriptJSON` from the analytics dict
    - Generates narration for all 7 scenes in parallel using `ThreadPoolExecutor` (reduces agent phase from ~20 s to ~3 s)
    - Uses `LLMLoadBalancer` for round-robin across Groq models with automatic fallback:
-     - Primary: `llama-3.1-8b-instant` (fast)
-     - Fallback: `llama-3.3-70b-versatile` (more capable)
+     - Primary: `openai/gpt-oss-120b` (best quality)
+     - Fallback: `openai/gpt-oss-20b` (faster)
    - Respects `cancel_event` between LLM calls
    - Returns a `ScriptJSON` Pydantic model
 
